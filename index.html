@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>新生兒黃疸光療與換血決策工具</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ffc107">
+  <!-- 引入 Bootstrap 5 -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+  <!-- 引入 Chart.js 用於繪製門檻曲線 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <style>
+    body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    .card { border: none; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    .card-header { background-color: #fff; border-bottom: 1px solid #eee; font-weight: bold; border-radius: 12px 12px 0 0 !important; }
+    .result-box { padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: center; }
+    .result-title { font-size: 0.9rem; margin-bottom: 5px; }
+    .result-value { font-size: 1.5rem; font-weight: bold; }
+    
+    /* 狀態顏色 */
+    .bg-safe { background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; }
+    .bg-photo { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+    .bg-exchange { background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7; }
+
+    #chart-container { position: relative; height: 300px; width: 100%; margin-top: 20px; }
+
+    /* 列印樣式 */
+    @media print {
+      .d-print-none { display: none !important; }
+      body { background-color: #fff; color: #000; font-size: 12pt; }
+      #print-section { display: block !important; }
+      .print-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+      .print-row { display: flex; justify-content: space-between; margin-bottom: 15px; }
+      .print-box { border: 1px solid #000; padding: 15px; margin-bottom: 15px; border-radius: 5px; }
+      .signature-area { margin-top: 50px; text-align: right; }
+      /* 強制印出背景色 */
+      .bg-safe, .bg-photo, .bg-exchange { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container py-4 d-print-none">
+  <h2 class="text-center mb-4">新生兒黃疸 (Hyperbilirubinemia) 決策工具</h2>
+  
+  <div class="row">
+    <!-- 左側輸入區 -->
+    <div class="col-md-5">
+      <div class="card">
+        <div class="card-header text-primary">1. 臨床參數輸入</div>
+        <div class="card-body">
+          <form id="jaundiceForm">
+            
+            <div class="mb-3">
+              <label class="form-label fw-bold">病童類型 (Gestational Age)</label>
+              <select class="form-select border-primary" id="gaType" onchange="togglePretermInputs()">
+                <option value="term">≥ 35 週 (依 AAP 指引曲線)</option>
+                <option value="preterm">< 35 週早產兒 (依出生體重級距)</option>
+              </select>
+            </div>
+
+            <!-- ≥35週 專用選項 -->
+            <div id="termInputs">
+              <div class="mb-3">
+                <label class="form-label">出生週數</label>
+                <select class="form-select" id="gaWeeks">
+                  <option value="38">≥ 38 週</option>
+                  <option value="35">35 ~ 37 6/7 週</option>
+                </select>
+              </div>
+              <div class="mb-3 form-check text-danger">
+                <input type="checkbox" class="form-check-input" id="riskFactors">
+                <label class="form-check-label" for="riskFactors">
+                  <strong>具備神經毒性風險因子</strong><br>
+                  <small class="text-muted">(如: 溶血疾病、G6PD、窒息、敗血症、酸中毒、白蛋白 < 3.0 g/dL)</small>
+                </label>
+              </div>
+            </div>
+
+            <!-- <35週 專用選項 (初始隱藏) -->
+            <div id="pretermInputs" style="display: none;">
+              <div class="mb-3">
+                <label class="form-label">出生體重 (Birth Weight)</label>
+                <select class="form-select" id="bwCategory">
+                  <option value="1000">< 1000 g</option>
+                  <option value="1500">1000 - 1499 g</option>
+                  <option value="2000">1500 - 1999 g</option>
+                  <option value="2500">2000 - 2499 g</option>
+                </select>
+              </div>
+            </div>
+
+            <hr>
+            
+            <div class="row mb-3">
+              <div class="col-6">
+                <label class="form-label fw-bold text-danger">出生時數 (Hours) *</label>
+                <input type="number" class="form-control border-danger" id="hoursOfLife" min="12" max="168" required placeholder="例如: 48">
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-bold text-danger">目前 TSB (mg/dL) *</label>
+                <input type="number" class="form-control border-danger" id="tsbValue" step="0.1" min="0" required placeholder="例如: 14.5">
+              </div>
+            </div>
+
+            <button type="button" class="btn btn-primary w-100 py-2 mb-2" onclick="calculateJaundice()">分析風險與產出決策</button>
+            <button type="button" class="btn btn-outline-secondary w-100 py-2" id="printBtn" onclick="printOrder()" disabled>🖨️ 列印處置單 (PDF)</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右側結果與圖表區 -->
+    <div class="col-md-7">
+      <div class="card">
+        <div class="card-header text-success">2. 臨床決策與圖表落點</div>
+        <div class="card-body">
+          
+          <!-- 警示區塊 -->
+          <div class="result-box bg-safe" id="resActionBox">
+            <div class="result-title" id="resRiskLevel">請先輸入參數</div>
+            <div class="result-value" id="resAction">--</div>
+            <small class="mt-2 d-block" id="resThresholds">光療門檻: -- | 換血門檻: --</small>
+          </div>
+
+          <!-- Chart.js 畫布 -->
+          <div id="chart-container">
+            <canvas id="jaundiceChart"></canvas>
+          </div>
+
+          <div class="alert alert-light mt-3 border text-muted" style="font-size: 0.8rem;">
+            <strong>ℹ️ 臨床提示：</strong> 本圖表依據美國兒科醫學會 (AAP) 曲線概念及早產兒體重共識簡化繪製。若 TSB 距離換血門檻小於 2-3 mg/dL，建議立即給予強效光療 (Intensive Phototherapy) 並聯絡備血。
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 列印專屬區塊 ================= -->
+<div id="print-section" style="display: none;">
+  <div class="print-header">
+    <h2>新生兒黃疸 (Hyperbilirubinemia) 處置醫囑單</h2>
+  </div>
+  <div class="print-row">
+    <div>
+      <strong>病歷號:</strong> ___________________<br>
+      <strong>病患姓名:</strong> ___________________
+    </div>
+    <div>
+      <strong>評估時間:</strong> <span id="prtDateTime"></span><br>
+      <strong>出生時數:</strong> <span id="prtHours"></span> 小時
+    </div>
+  </div>
+  <div class="print-box">
+    <h4>一、 病患參數與風險分級</h4>
+    <p><strong>分類基準:</strong> <span id="prtCategory"></span></p>
+    <p><strong>神經毒性風險因子:</strong> <span id="prtRiskFactors"></span></p>
+    <p><strong>AAP 判定風險群組:</strong> <span id="prtRiskLevel"></span></p>
+  </div>
+  <div class="print-box">
+    <h4>二、 膽紅素數值與門檻 (Thresholds)</h4>
+    <p><strong>目前總膽紅素 (TSB):</strong> <strong style="font-size: 1.3em;" id="prtTsb"></strong> mg/dL</p>
+    <hr>
+    <p><strong>光療門檻 (Phototherapy):</strong> <span id="prtPtThresh"></span> mg/dL</p>
+    <p><strong>換血門檻 (Exchange Transfusion):</strong> <span id="prtExtThresh"></span> mg/dL</p>
+  </div>
+  <div class="print-box" id="prtActionBox">
+    <h4>三、 臨床處置建議 (Action)</h4>
+    <h3 style="text-align: center; margin: 20px 0;" id="prtAction">--</h3>
+  </div>
+  <div class="signature-area">
+    <p><strong>醫師簽章:</strong> ___________________________</p>
+  </div>
+</div>
+
+<script>
+  let jaundiceChart = null;
+  let latestData = null;
+
+  // AAP >= 35w 簡化曲線數據點 [hours, TSB_threshold]
+  const curves = {
+    low: {
+      pt: [[24,12], [48,15], [72,18], [96,20], [168,21]],
+      ext: [[24,19], [48,22], [72,24], [96,25], [168,25]]
+    },
+    medium: {
+      pt: [[24,10], [48,13], [72,15], [96,18], [168,18]],
+      ext: [[24,17], [48,19], [72,21], [96,22.5], [168,22.5]]
+    },
+    high: {
+      pt: [[24,8], [48,11], [72,13.5], [96,15], [168,15]],
+      ext: [[24,15], [48,17], [72,18.5], [96,19], [168,19]]
+    }
+  };
+
+  // UI 切換
+  function togglePretermInputs() {
+    const type = document.getElementById('gaType').value;
+    if (type === 'preterm') {
+      document.getElementById('termInputs').style.display = 'none';
+      document.getElementById('pretermInputs').style.display = 'block';
+    } else {
+      document.getElementById('termInputs').style.display = 'block';
+      document.getElementById('pretermInputs').style.display = 'none';
+    }
+  }
+
+  // 線性內插法計算特定小時的門檻值
+  function interpolateThreshold(hours, dataPoints) {
+    if (hours <= dataPoints[0][0]) return dataPoints[0][1];
+    if (hours >= dataPoints[dataPoints.length-1][0]) return dataPoints[dataPoints.length-1][1];
+    
+    for (let i = 0; i < dataPoints.length - 1; i++) {
+      if (hours >= dataPoints[i][0] && hours <= dataPoints[i+1][0]) {
+        const x1 = dataPoints[i][0], y1 = dataPoints[i][1];
+        const x2 = dataPoints[i+1][0], y2 = dataPoints[i+1][1];
+        const slope = (y2 - y1) / (x2 - x1);
+        return y1 + slope * (hours - x1);
+      }
+    }
+    return 0;
+  }
+
+  function calculateJaundice() {
+    const hours = parseFloat(document.getElementById('hoursOfLife').value);
+    const tsb = parseFloat(document.getElementById('tsbValue').value);
+    const type = document.getElementById('gaType').value;
+    
+    if (isNaN(hours) || isNaN(tsb) || hours <= 0 || tsb < 0) {
+      alert("請輸入正確的出生時數與 TSB 數值！");
+      return;
+    }
+
+    let ptThresh = 0, extThresh = 0;
+    let riskLevelText = "", categoryText = "", hasRiskText = "無";
+    let activeCurve = null;
+
+    if (type === 'term') {
+      const weeks = document.getElementById('gaWeeks').value;
+      const hasRisk = document.getElementById('riskFactors').checked;
+      hasRiskText = hasRisk ? "有 (Yes)" : "無 (No)";
+      categoryText = weeks === "38" ? "≥ 38 週" : "35 ~ 37 6/7 週";
+
+      // 判定風險群組
+      if (weeks === "38" && !hasRisk) {
+        riskLevelText = "低風險群 (Lower Risk)";
+        activeCurve = curves.low;
+      } else if ((weeks === "38" && hasRisk) || (weeks === "35" && !hasRisk)) {
+        riskLevelText = "中風險群 (Medium Risk)";
+        activeCurve = curves.medium;
+      } else {
+        riskLevelText = "高風險群 (Higher Risk)";
+        activeCurve = curves.high;
+      }
+
+      ptThresh = interpolateThreshold(hours, activeCurve.pt);
+      extThresh = interpolateThreshold(hours, activeCurve.ext);
+      
+    } else {
+      // 早產兒邏輯 (<35w)
+      const bw = parseInt(document.getElementById('bwCategory').value);
+      categoryText = "< 35 週早產兒";
+      hasRiskText = "N/A (依體重評估)";
+      riskLevelText = "早產兒體重共識準則";
+
+      if (bw === 1000) { ptThresh = 5; extThresh = 11; categoryText += " (BW < 1000g)"; }
+      else if (bw === 1500) { ptThresh = 7; extThresh = 13; categoryText += " (BW 1000-1499g)"; }
+      else if (bw === 2000) { ptThresh = 10; extThresh = 15; categoryText += " (BW 1500-1999g)"; }
+      else if (bw === 2500) { ptThresh = 12; extThresh = 17; categoryText += " (BW 2000-2499g)"; }
+
+      // 產生平行的虛擬曲線供畫圖使用
+      activeCurve = {
+        pt: [[12, ptThresh], [168, ptThresh]],
+        ext: [[12, extThresh], [168, extThresh]]
+      };
+    }
+
+    // 格式化到小數點第一位
+    ptThresh = Number(ptThresh.toFixed(1));
+    extThresh = Number(extThresh.toFixed(1));
+
+    // 判斷處置邏輯
+    let action = "", boxClass = "", printBoxStyle = "";
+    if (tsb >= extThresh) {
+      action = "🚨 達換血標準 (Prepare for Exchange Transfusion)!<br><small>立即給予強效光療、聯絡血庫並準備轉診/入住 NICU。</small>";
+      boxClass = "bg-exchange"; printBoxStyle = "border: 2px solid #842029; background-color: #f8d7da;";
+    } else if (tsb >= ptThresh) {
+      action = "💡 達光療標準 (Start Phototherapy)<br><small>開始照光，並監測數值下降趨勢與水分補充。</small>";
+      boxClass = "bg-photo"; printBoxStyle = "border: 2px solid #856404; background-color: #fff3cd;";
+    } else {
+      action = "✅ 暫不需治療 (Observation)<br><small>常規照護，視臨床狀況決定追蹤抽血時間。</small>";
+      boxClass = "bg-safe"; printBoxStyle = "border: 2px solid #0f5132; background-color: #d1e7dd;";
+    }
+
+    // 更新 UI
+    const resBox = document.getElementById('resActionBox');
+    resBox.className = `result-box ${boxClass}`;
+    document.getElementById('resRiskLevel').innerText = riskLevelText;
+    document.getElementById('resAction').innerHTML = action;
+    document.getElementById('resThresholds').innerText = `目前光療門檻: ${ptThresh} | 換血門檻: ${extThresh}`;
+
+    // 更新圖表
+    updateChart(activeCurve, hours, tsb);
+
+    // 準備列印資料
+    latestData = { hours, tsb, categoryText, hasRiskText, riskLevelText, ptThresh, extThresh, action: action.replace(/<[^>]*>?/gm, ' '), boxClass, printBoxStyle };
+    document.getElementById('printBtn').disabled = false;
+  }
+
+  // 繪製與更新 Chart.js 圖表
+  function updateChart(activeCurve, currentHours, currentTsb) {
+    const ctx = document.getElementById('jaundiceChart').getContext('2d');
+    
+    const ptData = activeCurve.pt.map(point => ({ x: point[0], y: point[1] }));
+    const extData = activeCurve.ext.map(point => ({ x: point[0], y: point[1] }));
+    
+    // 如果圖表已存在，先銷毀
+    if (jaundiceChart) {
+      jaundiceChart.destroy();
+    }
+
+    jaundiceChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: '換血門檻 (Exchange Transfusion)',
+            data: extData,
+            borderColor: '#dc3545',
+            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            fill: false,
+            tension: 0.3
+          },
+          {
+            label: '光療門檻 (Phototherapy)',
+            data: ptData,
+            borderColor: '#ffc107',
+            backgroundColor: 'rgba(255, 193, 7, 0.2)',
+            borderWidth: 2,
+            fill: '-1', // 填充光療到換血之間的區域
+            tension: 0.3
+          },
+          {
+            label: '👶 目前 TSB 落點',
+            data: [{ x: currentHours, y: currentTsb }],
+            borderColor: '#0d6efd',
+            backgroundColor: '#0d6efd',
+            pointRadius: 8,
+            pointHoverRadius: 10,
+            pointStyle: 'circle',
+            showLine: false // 僅顯示單一點
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'linear',
+            title: { display: true, text: '出生時數 (Hours of Life)', font: {weight: 'bold'} },
+            min: 12, max: 168,
+            ticks: { stepSize: 24 }
+          },
+          y: {
+            title: { display: true, text: '總膽紅素 TSB (mg/dL)', font: {weight: 'bold'} },
+            min: 0, max: 30
+          }
+        },
+        plugins: {
+          legend: { position: 'top', labels: { usePointStyle: true } },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return context.dataset.label + ': ' + context.parsed.y + ' mg/dL';
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function printOrder() {
+    if (!latestData) return;
+    document.getElementById('prtDateTime').innerText = new Date().toLocaleString('zh-TW');
+    document.getElementById('prtHours').innerText = latestData.hours;
+    document.getElementById('prtCategory').innerText = latestData.categoryText;
+    document.getElementById('prtRiskFactors').innerText = latestData.hasRiskText;
+    document.getElementById('prtRiskLevel').innerText = latestData.riskLevelText;
+    
+    document.getElementById('prtTsb').innerText = latestData.tsb;
+    document.getElementById('prtPtThresh').innerText = latestData.ptThresh;
+    document.getElementById('prtExtThresh').innerText = latestData.extThresh;
+    
+    const actionBox = document.getElementById('prtActionBox');
+    actionBox.style = latestData.printBoxStyle;
+    document.getElementById('prtAction').innerText = latestData.action;
+
+    window.print();
+  }
+</script>
+
+</body>
+</html>
