@@ -1,0 +1,16 @@
+{
+  "name": "新生兒黃疸光療與換血決策工具",
+  "short_name": "新生兒黃疸",
+  "description": "AAP 2022 (≥35 週) 與 Maisels 2012 (<35 週) 光療／換血門檻",
+  "lang": "zh-TW",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f8f9fa",
+  "theme_color": "#ffc107",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
