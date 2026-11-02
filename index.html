@@ -37,6 +37,51 @@
 
     #chart-container { position: relative; height: 320px; width: 100%; margin-top: 10px; }
 
+    /* 分頁 */
+    .tab-nav { justify-content: center; gap: 6px; margin-bottom: 20px; }
+    .tab-nav .nav-link { background-color: #fff; border: 1px solid #dee2e6; color: #495057; }
+    .tab-nav .nav-link.active { background-color: #0d6efd; border-color: #0d6efd; color: #fff; }
+    .tab-panel[hidden] { display: none; }
+
+    /* 示範病例 */
+    .case-tag { font-size: 0.75rem; font-weight: normal; margin-left: 6px; }
+    .case-step { border: 1px solid #dee2e6; border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; background-color: #fff; }
+    .case-step .step-vals { font-size: 0.85rem; color: #6c757d; }
+    .case-step .step-result { border-radius: 6px; padding: 6px 10px; margin: 8px 0; font-size: 0.92rem; font-weight: 600; }
+    .case-step .step-result small { display: block; font-weight: normal; margin-top: 2px; }
+    .teach-list li { margin-bottom: 4px; }
+    .src-note { font-size: 0.78rem; color: #6c757d; }
+
+    /* 考題 */
+    .quiz-score { position: sticky; top: 0; z-index: 5; background-color: #f8f9fa; padding: 8px 0; }
+    .quiz-opt { display: block; width: 100%; text-align: left; background-color: #fff; border: 1px solid #ced4da; border-radius: 8px; padding: 8px 12px; margin-bottom: 6px; color: #212529; }
+    .quiz-opt:hover:not(:disabled) { background-color: #e7f1ff; }
+    .quiz-opt:disabled { color: #212529; opacity: 1; }
+    .quiz-opt.right { background-color: #d1e7dd; border-color: #198754; font-weight: 600; }
+    .quiz-opt.wrong { background-color: #f8d7da; border-color: #dc3545; }
+    .quiz-ex { background-color: #f1f3f5; border-radius: 8px; padding: 8px 12px; font-size: 0.9rem; margin-top: 8px; }
+
+    /* 心智圖 */
+    .mm-root { display: inline-block; background-color: #212529; color: #fff; font-weight: 700; border-radius: 10px; padding: 10px 18px; }
+    .mm-branches { margin: 14px 0 0 18px; padding-left: 24px; }
+    .mm-branch { position: relative; display: grid; grid-template-columns: 190px 1fr; gap: 26px; padding: 8px 0; }
+    .mm-branch::before { content: ''; position: absolute; left: -24px; top: 28px; width: 24px; border-top: 2px solid #adb5bd; }
+    .mm-branch::after { content: ''; position: absolute; left: -24px; top: 0; bottom: 0; border-left: 2px solid #adb5bd; }
+    .mm-branch:last-child::after { bottom: auto; height: 28px; }
+    .mm-head { align-self: start; width: 100%; min-height: 40px; border: 0; border-radius: 8px; padding: 8px 10px; color: #fff; font-weight: 700; text-align: left; background-color: var(--mm); }
+    .mm-head::after { content: '▾'; float: right; }
+    .mm-head[aria-expanded="false"]::after { content: '▸'; }
+    .mm-leaves { list-style: none; margin: 0; padding: 0 0 0 16px; border-left: 3px solid var(--mm); }
+    .mm-leaves li { background-color: #fff; border: 1px solid #dee2e6; border-radius: 8px; padding: 6px 10px; margin-bottom: 6px; font-size: 0.92rem; }
+    .mm-leaves li b { color: var(--mm); }
+    .mm-tag { font-size: 0.72rem; color: #6c757d; white-space: nowrap; margin-left: 4px; }
+    @media (max-width: 820px) {
+      .mm-branches { margin-left: 6px; padding-left: 16px; }
+      .mm-branch { grid-template-columns: 1fr; gap: 6px; }
+      .mm-branch::before { left: -16px; width: 16px; }
+      .mm-branch::after { left: -16px; }
+    }
+
     @media print {
       .d-print-none { display: none !important; }
       body { background-color: #fff; color: #000; font-size: 11pt; }
@@ -57,6 +102,14 @@
   <h2 class="text-center mb-1">新生兒黃疸 (Hyperbilirubinemia) 決策工具</h2>
   <p class="text-center text-muted small mb-4">≥ 35 週：AAP 2022 臨床指引 ｜ &lt; 35 週：Maisels 2012 早產兒共識</p>
 
+  <ul class="nav nav-pills tab-nav" id="tabNav">
+    <li class="nav-item"><a class="nav-link active" href="#tool" data-tab="tool">決策工具</a></li>
+    <li class="nav-item"><a class="nav-link" href="#cases" data-tab="cases">示範病例</a></li>
+    <li class="nav-item"><a class="nav-link" href="#quiz" data-tab="quiz">考題</a></li>
+    <li class="nav-item"><a class="nav-link" href="#map" data-tab="map">心智圖</a></li>
+  </ul>
+
+  <div class="tab-panel" id="tab-tool">
   <div class="row">
     <!-- 左側輸入區 -->
     <div class="col-md-5">
@@ -91,6 +144,8 @@
                 <div class="form-check"><input class="form-check-input rf" type="checkbox" id="rfSepsis"><label class="form-check-label" for="rfSepsis">敗血症</label></div>
                 <div class="form-check"><input class="form-check-input rf" type="checkbox" id="rfUnstable"><label class="form-check-label" for="rfUnstable">過去 24 小時有明顯臨床不穩定</label></div>
               </div>
+              <div class="form-check mt-2"><input class="form-check-input" type="checkbox" id="rfRising"><label class="form-check-label" for="rfRising">TSB 在照光中仍持續上升</label></div>
+              <div class="form-text mt-0">只有換血與升級門檻改用有風險因子曲線 (Fig 6)，光療門檻不變。</div>
             </div>
 
             <!-- <35週：Maisels 2012 高風險 -->
@@ -106,8 +161,8 @@
 
             <div class="form-check mb-3 text-danger">
               <input type="checkbox" class="form-check-input" id="abe">
-              <label class="form-check-label" for="abe"><strong>出現急性膽紅素腦病變徵象</strong><br>
-                <small class="text-muted">張力過高、角弓反張、後頸弓、高頻哭聲、發燒、嗜睡且吸吮差</small></label>
+              <label class="form-check-label" for="abe"><strong>出現中晚期急性膽紅素腦病變徵象</strong><br>
+                <small class="text-muted">張力過高、弓背、後頸弓、角弓反張、高頻哭聲、反覆呼吸中止。單純嗜睡、吸吮差不勾選，請依 TSB 判斷並儘速評估。</small></label>
             </div>
 
             <hr>
@@ -188,7 +243,8 @@
             <strong>ℹ️ 臨床提示：</strong>
             <ul class="mb-0 ps-3">
               <li><strong>照護升級 (Escalation of care)</strong>：TSB ≥ 換血門檻 −2 mg/dL → 強效照光、靜脈輸液、CBC、血型與交叉配血、白蛋白、直接膽紅素，每 2 小時追 TSB；同族免疫溶血者考慮 IVIG 0.5–1 g/kg（2 小時輸注，可於 12 小時後重複）。</li>
-              <li><strong>停止照光</strong>：TSB 降至「開始照光當時該時數的光療門檻」以下至少 2 mg/dL。若 &lt; 38 週、&lt; 48 小時開始照光或有溶血，反彈風險較高，停照光後 6–12 小時與隔天追 TSB；其他則 1–2 天後追 TcB/TSB。</li>
+              <li><strong>停止照光</strong>：TSB 降至「開始照光當時該時數的光療門檻」以下至少 2 mg/dL；&lt; 38 週、&lt; 48 小時開始照光或有溶血，可考慮照久一點。</li>
+              <li><strong>停光後追蹤</strong>：出生住院期間照光，且 &lt; 48 小時開始、DAT 陽性或已知／疑似溶血 → 6–12 小時測 TSB，隔天再測。其他出生住院期間照光者、曾照光後再入院者 → 隔天測。再入院但出生時未照光、或居家光療者 → 1–2 天內測膽紅素或臨床追蹤。停光滿 24 小時後可考慮改測 TcB。</li>
               <li>可在 TSB 略低於門檻時依臨床判斷提早照光。台灣 G6PD 缺乏症常見，請查閱新生兒篩檢結果。</li>
               <li>本工具僅供臨床參考，不取代醫師判斷。</li>
             </ul>
@@ -203,6 +259,29 @@
     資料來源：Kemper AR, et al. <em>Pediatrics</em> 2022;150(3):e2022058859（門檻值取自 PediTools AAP 2022 計算器）；
     Maisels MJ, et al. <em>J Perinatol</em> 2012;32:660–664。
   </p>
+  </div>
+
+  <div class="tab-panel" id="tab-cases" hidden>
+    <p class="text-muted small">每例先讀病情再想答案。每個步驟的門檻由上方決策工具的計算核心算出，「帶入工具」可看曲線落點。病例為教學虛構。</p>
+    <div id="caseList"></div>
+  </div>
+
+  <div class="tab-panel" id="tab-quiz" hidden>
+    <div class="quiz-score d-flex justify-content-between align-items-center">
+      <strong id="quizScore"></strong>
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="quizReset">重新作答</button>
+    </div>
+    <div id="quizList"></div>
+  </div>
+
+  <div class="tab-panel" id="tab-map" hidden>
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+      <div class="mm-root">新生兒黃疸處置</div>
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="mapToggle">全部收合</button>
+    </div>
+    <div class="mm-branches" id="mapTree"></div>
+    <p class="src-note mt-3 mb-0">KAS = AAP 2022 Key Action Statement。靜態整理，門檻數值請以決策工具計算為準。</p>
+  </div>
 </div>
 
 <!-- ================= 列印專屬區塊 ================= -->
@@ -285,16 +364,17 @@ const JX = (() => {
   function aapKey(ga) { return String(Math.min(40, Math.max(35, Math.floor(ga)))); }
 
   // ≥35 wk: thresholds at a given age (h). risk = any neurotoxicity risk factor.
-  function aap(ga, hours, risk) {
+  // rising = TSB increasing despite phototherapy: exchange curve only (KAS 17, Fig 6).
+  function aap(ga, hours, risk, rising) {
     const c = AAP[aapKey(ga)];
     const pt = r1(interp(AAP.ages, risk ? c.pr : c.pn, hours));
-    const et = r1(interp(AAP.ages, risk ? c.er : c.en, hours));
+    const et = r1(interp(AAP.ages, risk || rising ? c.er : c.en, hours));
     return { pt, et, esc: r1(et - 2) };
   }
 
-  function aapCurve(ga, risk) {
+  function aapCurve(ga, risk, rising) {
     const c = AAP[aapKey(ga)];
-    return AAP.ages.map((h, i) => ({ h, pt: (risk ? c.pr : c.pn)[i], et: (risk ? c.er : c.en)[i] }));
+    return AAP.ages.map((h, i) => ({ h, pt: (risk ? c.pr : c.pn)[i], et: (risk || rising ? c.er : c.en)[i] }));
   }
 
   // <35 wk: postmenstrual age = GA + postnatal days.
@@ -354,12 +434,12 @@ const JX = (() => {
     return e;
   }
 
-  // i: { ga, gaDays, hours, tsb (mg/dL), method:'tsb'|'tcb', risk, abe, albumin, prev:{hours,tsb} }
+  // i: { ga, gaDays, hours, tsb (mg/dL), method:'tsb'|'tcb', risk, rising, abe, albumin, prev:{hours,tsb} }
   function assess(i) {
     const errors = validate(i);
     if (errors.length) return { errors };
     const term = i.ga >= 35;
-    const t = term ? aap(i.ga, i.hours, i.risk) : maisels(i.ga, i.gaDays, i.hours, i.risk);
+    const t = term ? aap(i.ga, i.hours, i.risk, i.rising) : maisels(i.ga, i.gaDays, i.hours, i.risk);
     const tcb = i.method === 'tcb';
     const out = { term, tcb, ...t, notes: [] };
     out.diffPt = r1(t.pt - i.tsb);
@@ -373,7 +453,8 @@ const JX = (() => {
     else if (term && out.diffPt < 2) out.level = 'near';
     else out.level = 'below';
 
-    if (term && !i.abe && (out.level === 'below' || out.level === 'near' || (tcb && out.level === 'tcb-confirm' && i.tsb < t.pt)))
+    // Fig 7 applies only at ≥12 h in infants who have not received phototherapy.
+    if (term && !i.abe && !i.rising && i.hours >= 12 && (out.level === 'below' || out.level === 'near' || (tcb && out.level === 'tcb-confirm' && i.tsb < t.pt)))
       out.followUp = followUp(out.diffPt, i.hours);
     if (term) out.stopPt = r1(t.pt - 2);
     out.rate = rate(i.prev, { hours: i.hours, tsb: i.tsb });
@@ -382,16 +463,290 @@ const JX = (() => {
       const limit = term ? baLimit(i.ga, i.risk) : null;
       out.ba = { ratio: Math.round(ratio * 10) / 10, limit, over: limit != null && ratio >= limit };
     }
+    if (term && !i.abe && i.hours < 12 && i.tsb < t.pt) out.notes.push('出生未滿 12 小時，Fig 7 的追蹤建議不適用；若此時出院，應在出生 24–48 小時之間測膽紅素。');
     if (i.hours < 24) out.notes.push('出生 24 小時內出現黃疸視為異常，應儘速測 TSB 並評估溶血（DAT、血型、CBC、G6PD）。');
     if (out.rate && out.rate.rapid) out.notes.push(`上升速率 ${out.rate.perH} mg/dL/h ≥ ${out.rate.limit}，提示溶血：測 DAT、CBC＋網狀紅血球、G6PD；確認溶血時請勾選神經毒性風險因子。`);
     if (out.ba && out.ba.over) out.notes.push(`TSB/白蛋白比 ${out.ba.ratio} ≥ ${out.ba.limit}：與 TSB 一併作為是否換血的考量（不可單獨取代 TSB 門檻）。`);
-    if (tcb) out.notes.push('TcB 只用於篩檢：TcB ≥ 光療門檻 −3 mg/dL 或 TcB ≥ 15 mg/dL 時須抽 TSB；照光中或照光後不可用 TcB。');
+    if (tcb) out.notes.push(`TcB 只用於篩檢：TcB ≥ 光療門檻 −3 mg/dL 或 TcB ≥ 15 mg/dL 時須抽 TSB。照光中不要依賴 TcB（照光部位會低估）；${term ? '停光滿 24 小時後才可考慮改測 TcB。' : '小於 35 週者照光後使用 TcB 的資料不足。'}`);
     return out;
   }
 
   return { AAP, MAISELS, interp, aap, aapCurve, maisels, pmaText, baLimit, followUp, rate, toMg, validate, assess };
 })();
 /*ENGINE-END*/
+</script>
+<script>
+/*TEACH-START*/
+const TEACH = (() => {
+  const AAP = 'AAP 2022';
+  // step: 一個時間點。rf = 工具上要勾的風險因子 id；expect 由 tests.cjs 對照計算核心。
+  const CASES = [
+    {
+      id: 'c1', title: '健康足月兒的出院前篩檢', tag: 'TcB 與 Fig 7',
+      story: '39 週男嬰，母親 A 型 Rh(+)、抗體篩檢陰性。純母乳、吸吮良好，無瘀血。預計當天出院，出生 30 小時測 TcB。',
+      ask: 'TcB 夠不夠做決定？抽血後何時要再追？',
+      steps: [
+        { label: '出生 30 h，TcB 11.5', ga: 39, hours: 30, tsb: 11.5, method: 'tcb', rf: [],
+          expect: { level: 'tcb-confirm', pt: 13.8, et: 22.1 },
+          why: '光療門檻 13.8，TcB 已在 3 mg/dL 內（≥ 10.8），要抽血確認。' },
+        { label: '出生 31 h，TSB 10.6', ga: 39, hours: 31, tsb: 10.6, rf: [],
+          expect: { level: 'below', pt: 14, et: 22.2 },
+          why: '門檻 14.0 − TSB 10.6 = 3.4，落在 2.0–3.4 這一格：4–24 小時內追 TSB 或 TcB。' }
+      ],
+      points: [
+        'TcB 是篩檢工具，光療與升級決策都要看 TSB（KAS 3、6）。',
+        '追蹤間隔依「距光療門檻的差值」決定，不再用 2004 年的風險區間圖（KAS 24）。',
+        '無法安排門診追蹤時，可延後出院（KAS 8）。',
+        '未照光情況下，已記錄到至少 6 小時的自發下降，之後風險低，除非又出現黃疸加重或急性病況，不必再測。'
+      ],
+      src: `${AAP} KAS 3、5、6、8、24；Fig 7`
+    },
+    {
+      id: 'c2', title: '攝取不足的出院後黃疸', tag: '居家光療與餵食',
+      story: '38 週女嬰，純母乳，母親 A 型 Rh(+)、抗體篩檢陰性。出生 48 小時出院，住院期間未照光。第 4 天（96 h）回診：每天哺乳 5–6 次、尿少，體重比出生少 11%，活動力尚可。TSB 21.2。',
+      ask: '數字符合居家光療嗎？可以給水或糖水嗎？',
+      steps: [
+        { label: '出生 96 h，TSB 21.2', ga: 38, hours: 96, tsb: 21.2, rf: [],
+          expect: { level: 'photo', pt: 20.7, et: 27 },
+          why: '超過光療門檻 20.7 共 0.5。可考慮停照光的參考值為 18.7（起始門檻 − 2）。' }
+      ],
+      points: [
+        '週數、日齡、無風險因子、未曾照光、超過門檻 ≤ 1 都符合居家光療，但「臨床良好且餵食足夠」不符合，所以應住院照光（KAS 11）。',
+        '不給水或糖水（KAS 2）。是否暫時補充擠出母乳、捐贈母乳或配方奶，與父母討論利弊後共同決定。',
+        '靜脈輸液只用在無法由腸道矯正的脫水，或 TSB 已達照護升級門檻時。',
+        '照光後 12 小時內追 TSB，並驗 Hb／Hct／CBC（KAS 12、14）。',
+        '出生住院時未照光、因超過門檻再入院：停照光後 1–2 天測膽紅素或臨床追蹤（KAS 16）。'
+      ],
+      src: `${AAP} KAS 2、11、12、14、15、16`
+    },
+    {
+      id: 'c3', title: '24 小時內黃疸與 ABO 不合', tag: 'DAT 改變決策',
+      story: '37 週男嬰，母親 O 型 Rh(+)、抗體篩檢陰性。出生 12 小時發現黃疸，立即抽血 TSB 7.4；18 小時追蹤 TSB 9.8，DAT 已送驗。',
+      ask: 'DAT 結果回來前後，判讀會差多少？37 週要不要另外勾風險因子？',
+      steps: [
+        { label: '出生 18 h，DAT 未回', ga: 37, hours: 18, tsb: 9.8, rf: [], prev: { hours: 12, tsb: 7.4 },
+          expect: { level: 'near', pt: 10.7, et: 19.5 },
+          why: '尚低於門檻 10.7，但上升速率 0.4 mg/dL/h（≥ 0.3）已提示溶血，不宜只看單點。' },
+        { label: '出生 18 h，DAT 陽性', ga: 37, hours: 18, tsb: 9.8, rf: ['rfIso'], prev: { hours: 12, tsb: 7.4 },
+          expect: { level: 'photo', pt: 9, et: 16.5 },
+          why: '改用有風險因子曲線，門檻降為 9.0，同一個 TSB 變成達光療標準；照護升級門檻 14.5。' }
+      ],
+      points: [
+        '出生 24 小時內的黃疸要立即測 TSB 或 TcB（KAS 4）；此時超過光療門檻多半是溶血。',
+        '週數 &lt; 38 週已反映在各週曲線裡，不算「週數以外的風險因子」，不必另外勾選。',
+        '母親 O 型且嬰兒需要照光時要驗 DAT（KAS 14）。',
+        '出生 48 小時內開始照光或 DAT 陽性：停照光後 6–12 小時驗 TSB，隔天再測一次（KAS 16）。可考慮照久一點（KAS 15）。'
+      ],
+      src: `${AAP} KAS 4、7、10、14、15、16；Table 2、Fig 3`
+    },
+    {
+      id: 'c4', title: '配方奶寶寶的晚發嚴重黃疸', tag: 'G6PD',
+      story: '40 週男嬰，配方奶，吃得好、體重增加正常。第 5 天（120 h）黃疸突然變深，TSB 22.0，白蛋白 3.2。DAT 陰性。接著查到新生兒篩檢報告為 G6PD 缺乏。',
+      ask: '知道 G6PD 缺乏前後，處置層級差在哪？IVIG 適用嗎？',
+      steps: [
+        { label: '出生 120 h，尚不知 G6PD', ga: 40, hours: 120, tsb: 22, rf: [], albumin: 3.2,
+          expect: { level: 'photo', pt: 21.8, et: 27 },
+          why: '無風險因子曲線下僅達光療門檻 21.8。' },
+        { label: '出生 120 h，G6PD 缺乏', ga: 40, hours: 120, tsb: 22, rf: ['rfG6pd'], albumin: 3.2,
+          expect: { level: 'escalation', pt: 18.2, et: 23.5 },
+          why: '有風險因子時換血門檻 23.5、升級門檻 21.5，TSB 22.0 已需照護升級；B/A 6.9，未達 7.2。' }
+      ],
+      points: [
+        '配方奶寶寶 TSB 偏高或晚發黃疸都是不典型表現，要想到 G6PD 缺乏；它可造成突然且難以預測的大幅上升，也可能幾乎沒有溶血的檢驗證據。',
+        '黃疸原因不明且 TSB 突然上升、照光中仍升、或需照護升級時，要測 G6PD（KAS 14）。',
+        '溶血當下或換血後可能出現假性正常；高度懷疑但結果正常時，至少 3 個月後再測。',
+        '照護升級：STAT 總／直接膽紅素、CBC、白蛋白、生化、血型與交叉配血，靜脈輸液加強效照光，至少每 2 小時追 TSB（KAS 18–20）。',
+        'IVIG 的適應症是 DAT 陽性的同族免疫溶血，本例不適用（KAS 21）。'
+      ],
+      src: `${AAP} KAS 14、17–21；II.A 節 G6PD 段落`
+    },
+    {
+      id: 'c5', title: 'Rh 溶血一路升到換血門檻', tag: '升級、換血、ABE',
+      story: '36 週男嬰，母親 Rh(−) 且孕前已驗出 anti-D 抗體（不是注射 RhIG 造成），嬰兒 DAT 陽性、白蛋白 2.7，已在強效照光。',
+      ask: '每次 TSB 回來要做什麼？什麼情況可以暫緩換血，什麼情況不行？',
+      steps: [
+        { label: '出生 40 h，TSB 17.5', ga: 36, hours: 40, tsb: 17.5, rf: ['rfIso', 'rfAlb'], albumin: 2.7,
+          expect: { level: 'escalation', pt: 11.8, et: 18.3 },
+          why: '達升級門檻 16.3、未達換血 18.3：轉 NICU、STAT 檢驗、通知血庫，可考慮 IVIG 0.5–1 g/kg 輸注 2 小時。' },
+        { label: '出生 44 h，TSB 18.8', ga: 36, hours: 44, tsb: 18.8, rf: ['rfIso', 'rfAlb'], albumin: 2.7,
+          expect: { level: 'exchange', pt: 12.4, et: 18.7 },
+          why: '已達換血門檻 18.7，應緊急換血；B/A 7.0 也 ≥ 6.8。' },
+        { label: '出生 46 h，備血時重抽 TSB 17.9，神經學檢查正常', ga: 36, hours: 46, tsb: 17.9, rf: ['rfIso', 'rfAlb'], albumin: 2.7,
+          expect: { level: 'escalation', pt: 12.6, et: 18.9 },
+          why: '開始換血前已低於門檻 18.9 且無 ABE 徵象：可暫緩換血，繼續強效照光，每 2 小時追到低於升級門檻 16.9（KAS 23）。' },
+        { label: '出生 46 h，同一 TSB 但出現張力過高、後頸弓、高頻哭聲', ga: 36, hours: 46, tsb: 17.9, rf: ['rfIso', 'rfAlb'], abe: true,
+          expect: { level: 'exchange', pt: 12.6, et: 18.9 },
+          why: '中期或晚期急性膽紅素腦病變徵象：即使 TSB 低於門檻，仍應緊急換血（KAS 22）。' }
+      ],
+      points: [
+        '升級門檻 = 換血門檻 − 2，是醫療急症；能直接入 NICU 就不要經過急診（KAS 17）。',
+        'TSB 在照光中仍持續上升時，也要用有風險因子的換血曲線（KAS 17、Fig 6）。',
+        'IVIG 可於 12 小時後重複；防止換血的效果不明，觀察性研究與 NEC 有關聯，其他升級措施不可省略（KAS 21）。',
+        'B/A 比與 TSB 一起評估，35–37 週有風險因子為 6.8。',
+        '換血血品優先選交叉配血後的洗滌紅血球混合解凍 FFP，Hct 約 40%。'
+      ],
+      src: `${AAP} KAS 17–23；Fig 4、Fig 6`
+    },
+    {
+      id: 'c6', title: '30 週早產兒', tag: '&lt; 35 週',
+      story: '30 0/7 週女嬰，NICU 住院，出生第 5 天（120 h）TSB 9.2，接著回報白蛋白 2.3。第 14 天（336 h）TSB 仍為 9.2，白蛋白仍低。',
+      ask: '為什麼不能用 AAP 曲線？第 14 天的門檻為什麼和第 5 天不同？',
+      steps: [
+        { label: '第 5 天，白蛋白未回', ga: 30, hours: 120, tsb: 9.2, rf: [],
+          expect: { level: 'below', pt: 10, et: 16 },
+          why: 'PMA 30 5/7 週，落在 30 0/7–31 6/7 週級距（光療 8–10、換血 13–16），無高風險時工具採上限 10。' },
+        { label: '第 5 天，白蛋白 2.3', ga: 30, hours: 120, tsb: 9.2, rf: ['rpAlb'], albumin: 2.3,
+          expect: { level: 'photo', pt: 8, et: 13 },
+          why: '白蛋白 &lt; 2.5 為高風險，採下限：光療 8、換血 13，TSB 9.2 達光療標準。' },
+        { label: '第 14 天，白蛋白 2.3', ga: 30, hours: 336, tsb: 9.2, rf: ['rpAlb'], albumin: 2.3,
+          expect: { level: 'below', pt: 10, et: 15 },
+          why: 'PMA 已到 32 0/7 週，往上一級：下限光療 10、換血 15，同一數值已低於光療門檻。' }
+      ],
+      points: [
+        'AAP 2022 只適用於 ≥ 35 週；&lt; 35 週用 Maisels 2012 的共識範圍，依矯正週數分級。',
+        '出生 &lt; 35 週者，矯正週數超過 35 週後仍留在最高一級，不改用 AAP 曲線。',
+        '這張表沒有 AAP 的「換血 − 2」升級帶，工具也不顯示。',
+        '&lt; 35 週嬰兒照光後使用 TcB 的資料不足。',
+        '極低出生體重：Morris 2008 積極照光減少重度神經發展障礙，但 Bayesian 分析估計 &lt; 750 g 者死亡風險增加的機率達 89%，要權衡。'
+      ],
+      src: 'Maisels 2012 門檻表（經 MSD Manual 與 UNC NCCC 2025 指引轉載核對）；Morris 2008 與 TcB 敘述取自 UNC NCCC 2025 指引'
+    }
+  ];
+
+  // a = 正解索引。固定順序、A–D 各 5 題。
+  const QUIZ = [
+    { lv: '基礎', q: '純母乳寶寶體重略減，家屬問可否餵糖水預防黃疸，建議是？',
+      o: ['可以，每次餵奶後補少量糖水', '不建議，應協助有效哺乳', '白開水可以，糖水不行', 'TSB 接近光療門檻時才補糖水'], a: 1,
+      ex: '不應以水或糖水預防或降低膽紅素。臨床建議每 24 小時至少哺乳 8 次。', src: 'KAS 2' },
+    { lv: '基礎', q: 'TcB 符合哪個條件時要抽血測 TSB？',
+      o: ['TcB 超過光療門檻才抽，未達門檻時一律依 TcB 決定處置', 'TcB 高於光療門檻 1 mg/dL', 'TcB ≥ 20 mg/dL', 'TcB 距光療門檻 ≤ 3 或已超過，或 TcB ≥ 15'], a: 3,
+      ex: 'TSB 在 15 mg/dL 以下時與 TcB 的差距通常在 3 mg/dL 內，所以設這兩個條件。', src: 'KAS 6' },
+    { lv: '基礎', q: '下列何者「不是」AAP 2022 的神經毒性風險因子？',
+      o: ['白蛋白低於 3.0 g/dL', '過去 24 小時明顯臨床不穩定', '純母乳且攝取不足', 'DAT 陽性的同族免疫溶血'], a: 2,
+      ex: '攝取不足會增加發生高膽紅素血症的風險（Table 1），但不在神經毒性風險因子（Table 2）裡，不影響曲線選擇。', src: 'Table 1、Table 2' },
+    { lv: '基礎', q: '出生 16 小時護理師發現嬰兒已有黃疸，下一步？',
+      o: ['立即測 TcB 或 TSB', '等 24–48 小時常規篩檢時一起測', '先曬太陽並觀察到隔天', '增加哺乳次數，滿 24 小時再評估'], a: 0,
+      ex: '24 小時內的黃疸若找得到原因，多半是溶血。AAP 也不建議用日曬治療。', src: 'KAS 4' },
+    { lv: '基礎', q: '哪一組上升速率提示溶血，應驗 DAT？（前者為出生 24 小時內，後者為之後，單位 mg/dL/h）',
+      o: ['≥ 0.1；≥ 0.1', '≥ 0.3；≥ 0.2', '≥ 0.5；≥ 0.3', '≥ 0.2；≥ 0.3'], a: 1,
+      ex: '這樣的速率並不常見，若尚未驗 DAT 就要驗。', src: 'KAS 7' },
+    { lv: '基礎', q: '強效照光 (intensive phototherapy) 的規格是？',
+      o: ['窄頻 LED 藍光，約 475 nm，輻照度 ≥ 30 µW/cm²/nm', '寬頻白光，輻照度 ≥ 10 µW/cm²/nm 即可，不需限制波長與照射面積', '窄頻 LED 綠光，約 530 nm，輻照度 ≥ 30 µW/cm²/nm', '每日日曬 30 分鐘，再配合一般日光燈與勤餵奶'], a: 0,
+      ex: '460–490 nm 以外的光只增加熱與可能有害的波長。照射面積也要盡量大。', src: 'III.A 節' },
+    { lv: '基礎', q: '住院嬰兒開始照光後，第一次追蹤 TSB 應在？',
+      o: ['24 小時內，依日齡與趨勢再調整', '停止照光時才抽', '12 小時內', '改用照光部位 TcB 每日追蹤'], a: 2,
+      ex: '12 小時是上限，依日齡、風險因子、TSB 與趨勢可更早。照光部位的 TcB 會低估 TSB，不可用來追蹤。', src: 'KAS 12' },
+    { lv: '基礎', q: '40 週無風險因子，出生 48 小時 TSB 18.0 開始照光（當時門檻 17.0），何時可以考慮停照光？',
+      o: ['TSB 低於 18.0', 'TSB 低於 17.0', 'TSB 低於 16.0', 'TSB 低於 15.0'], a: 3,
+      ex: '以「開始照光時該時數的門檻」再減 2 mg/dL，不是以當天的門檻或起始 TSB 計算。', src: 'KAS 15' },
+    { lv: '基礎', q: '純母乳寶寶 3 週半仍有黃疸，生長良好，下一步？',
+      o: ['停哺母乳 48 小時，觀察黃疸是否明顯下降再決定', '測總及直接膽紅素，並查新生兒篩檢結果', '直接安排光療', '安撫家長，滿 3 個月再抽血'], a: 1,
+      ex: '目的是找出病理性膽汁滯留。配方奶寶寶則是滿 2 週仍黃就要測。', src: 'KAS 9' },
+    { lv: '基礎', q: '39 週無風險因子，出生 60 小時換血門檻為 25.1。照護升級從多少開始？之後 TSB 多久追一次？',
+      o: ['23.1；至少每 2 小時', '25.1；至少每 2 小時', '23.1；每 6 小時', '25.1；每 12 小時'], a: 0,
+      ex: '升級門檻 = 換血門檻 − 2。照光中 TSB 仍上升者，換血曲線要改用 Fig 6（有風險因子）。', src: 'KAS 17、20' },
+
+    { lv: '高階', q: '39 週 G6PD 缺乏，出生 60 小時 TSB 16.0，判讀為？',
+      o: ['依無風險曲線 18.1 未達標，4–24 小時再追', '依 18.1 未達標，可出院', '達光療門檻 15.4，開始照光', '達照護升級門檻 19.2'], a: 2,
+      ex: '≥ 38 週有風險因子共用同一條曲線：光療 15.4、換血 21.2、升級 19.2。', src: 'KAS 10；Fig 3、Fig 6' },
+    { lv: '高階', q: '39 週，出生 72 小時總膽紅素 20.0，直接膽紅素 2.0。對照光療門檻時應用哪個數值？',
+      o: ['總膽紅素 20.0，不扣除', '扣除後的間接膽紅素 18.0', '直接比例 ≥ 20% 時才扣除', '總膽紅素與直接膽紅素取平均'], a: 0,
+      ex: '直接或結合型占 TSB 超過 50% 才諮詢專家。直接比例 &gt; 20% 已不再是膽汁滯留的必要條件；單次偏高可於數天到 2 週內重測。', src: 'KAS 10、17；II.E 節' },
+    { lv: '高階', q: '37 週 DAT 陰性，出生 60 小時才開始照光，住院期間停光。之後怎麼追？',
+      o: ['停光後 6–12 小時及隔天都測 TSB', '1–2 天後臨床追蹤，再決定是否測', '不必追蹤', '停光隔天測膽紅素'], a: 3,
+      ex: '6–12 小時的條件只有 &lt; 48 小時開始照光、DAT 陽性、已知或疑似溶血。&lt; 38 週是反彈風險因子（可考慮照久一點），但不在這組。1–2 天的安排適用再入院且出生時未照光者。', src: 'KAS 15、16' },
+    { lv: '高階', q: '已出院嬰兒 TSB 略超過門檻，誰可以考慮居家 LED 光療？',
+      o: ['37 週，60 h，超過 0.5，餵食佳，無其他風險，設備可到位且可每日抽血', '39 週，72 h，超過 0.5，餵食佳，未曾照光，可每日抽血', '40 週，96 h，超過 0.5，餵食佳，出生時曾照光', '38 週，5 天，超過 0.5，餵食佳，G6PD 缺乏'], a: 1,
+      ex: '需同時符合 ≥ 38 週、≥ 48 小時、臨床良好且餵食足夠、無風險因子、未曾照光、超過門檻 ≤ 1、LED 設備立即到位、可每日測 TSB。', src: 'KAS 11' },
+    { lv: '高階', q: '37 週 DAT 陽性，出生 48 小時 TSB 20.0（換血門檻 19.7）。備血時重抽 19.2，神經學檢查正常，下一步？',
+      o: ['曾達門檻就不可逆，仍須依原計畫完成換血並持續照光', '停止照光，觀察即可', '可暫緩換血，續強效照光，每 2 小時追 TSB', '轉回一般病房，隔天再追'], a: 2,
+      ex: '暫緩的條件是開始換血前 TSB 已低於門檻，且沒有中晚期急性膽紅素腦病變徵象（張力過高、弓背、後頸弓、角弓反張、高頻哭聲、反覆呼吸中止）。', src: 'KAS 22、23' },
+    { lv: '高階', q: '下列何者符合 IVIG 的適應症？',
+      o: ['G6PD 缺乏，TSB 達升級門檻', 'DAT 陽性，TSB 剛達光療門檻', '敗血症，TSB 達升級門檻', 'DAT 陽性，TSB 達升級門檻'], a: 3,
+      ex: '0.5–1 g/kg 輸注 2 小時，可於 12 小時後重複，屬選項 (Option)。防止換血的效果不明，觀察性研究與 NEC 有關聯。', src: 'KAS 21' },
+    { lv: '高階', q: '嚴重溶血發作當下 G6PD 活性正常，但臨床高度懷疑，應如何處理？',
+      o: ['至少 3 個月後再測', '已可排除，不必再追', '隔天重測一次即可', '改驗血型與 DAT 取代'], a: 0,
+      ex: '溶血當下或剛結束、以及換血後都可能假性正常。', src: 'II.A 節' },
+    { lv: '高階', q: '37 週 DAT 陽性，出生 60 小時 TSB 17.0，白蛋白 2.4。B/A 比怎麼解讀？',
+      o: ['7.1 低於 7.2，不必考慮', '7.1 ≥ 6.8，可與 TSB 一起考慮換血', '比值已達標，不必看 TSB，應單憑 B/A 立即換血', 'DAT 陽性時 B/A 不適用'], a: 1,
+      ex: '35–37 週有風險因子為 6.8；無風險或 ≥ 38 週有風險為 7.2；≥ 38 週無風險為 8.0。本例 TSB 仍低於換血門檻 20.7，B/A 只是輔助條件。', src: 'III.F 節' },
+    { lv: '高階', q: '39 週無風險、未照光，出生 48 小時 TSB 10.6，門檻 16.6，今天出院。追蹤安排？',
+      o: ['4–24 小時內再測', '延後出院並開始照光，隔天再測 TSB 決定', '不需要安排追蹤', '2 天內回診，是否測依臨床判斷'], a: 3,
+      ex: '差值 6.0，落在 5.5–6.9 且 &lt; 72 小時出院。Fig 7 只適用於 ≥ 12 小時且未照光的嬰兒。', src: 'KAS 24；Fig 7' },
+    { lv: '高階', q: '28 0/7 週早產兒，出生第 14 天，白蛋白 2.3，應使用的光療與換血門檻？',
+      o: ['光療 6；換血 12', '光療 10；換血 16', '光療 8；換血 13', '改用 AAP 35 週曲線'], a: 2,
+      ex: '矯正週數 30 0/7，落在 30 0/7–31 6/7 週級距；白蛋白 &lt; 2.5 採下限。', src: 'Maisels 2012 門檻表' }
+  ];
+
+  const MAP = [
+    { head: '風險辨識', color: '#6f42c1', leaves: [
+      ['<b>發生高膽紅素血症</b>：週數愈低、24 小時內黃疸、接近光療門檻、溶血、父母或手足曾照光、頭血腫或瘀血、純母乳攝取不足、唐氏症、糖尿病母親巨嬰', 'Table 1'],
+      ['<b>神經毒性</b>：&lt; 38 週、白蛋白 &lt; 3.0、同族免疫溶血／G6PD／其他溶血、敗血症、24 小時內明顯不穩定', 'Table 2'],
+      ['<b>母親抗體陽性或未知</b>：儘快驗嬰兒 DAT 與血型', 'KAS 1'],
+      ['<b>G6PD</b>：配方奶寶寶高 TSB、晚發、突然上升時要想到；溶血時可假性正常，≥ 3 個月後再測', 'KAS 14']
+    ] },
+    { head: '篩檢與判讀', color: '#0d6efd', leaves: [
+      ['<b>視診</b>：至少每 12 小時；24 小時內黃疸立即測', 'KAS 4'],
+      ['<b>全部嬰兒</b>：24–48 小時或出院前測 TcB／TSB', 'KAS 5'],
+      ['<b>TcB 轉 TSB</b>：門檻 3 mg/dL 內或超過，或 ≥ 15', 'KAS 6'],
+      ['<b>速率</b>：≥ 0.3（24 小時內）、≥ 0.2（之後）mg/dL/h 提示溶血', 'KAS 7'],
+      ['<b>直接膽紅素</b>：不從 TSB 扣除；超過 TSB 50% 諮詢專家', 'KAS 10']
+    ] },
+    { head: '光療', color: '#e0a800', leaves: [
+      ['<b>門檻</b>：依週數、小時、有無風險因子（Fig 2、3）', 'KAS 10'],
+      ['<b>規格</b>：窄頻 LED 藍光約 475 nm，≥ 30 µW/cm²/nm，照射面積最大', 'III.A'],
+      ['<b>監測</b>：12 小時內追 TSB；照光部位 TcB 會低估', 'KAS 12'],
+      ['<b>檢查</b>：Hb／Hct／CBC；母親 O 型、Rh(−) 或抗體陽性驗 DAT；原因不明且上升異常測 G6PD', 'KAS 14'],
+      ['<b>餵食</b>：持續哺乳，不給水或糖水；IV 僅用於難矯正脫水或達升級門檻', 'KAS 2'],
+      ['<b>居家光療</b>：≥ 38 週、≥ 48 h、餵食佳、無風險因子、未曾照光、超過 ≤ 1、每日 TSB', 'KAS 11、13']
+    ] },
+    { head: '停光與反彈', color: '#198754', leaves: [
+      ['<b>停光</b>：TSB 低於起始門檻至少 2 mg/dL', 'KAS 15'],
+      ['<b>反彈風險</b>：&lt; 48 h 開始、溶血、&lt; 38 週、停光時 TSB 離門檻近', 'III.D'],
+      ['<b>6–12 h＋隔天</b>：&lt; 48 h 開始、DAT 陽性、已知或疑似溶血', 'KAS 16'],
+      ['<b>隔天</b>：其他出生住院期間照光者；曾照光後再入院者', 'KAS 16'],
+      ['<b>1–2 天</b>：再入院但出生時未照光、居家光療；停光 ≥ 24 小時可用 TcB', 'KAS 16']
+    ] },
+    { head: '照護升級與換血', color: '#dc3545', leaves: [
+      ['<b>升級門檻</b>：換血門檻 − 2；照光中仍上升也用 Fig 6', 'KAS 17'],
+      ['<b>STAT</b>：總／直接膽紅素、CBC、白蛋白、生化、血型與交叉配血', 'KAS 18'],
+      ['<b>處置</b>：IV 輸液、強效照光、會診新生兒科轉 NICU；至少每 2 小時 TSB', 'KAS 19、20'],
+      ['<b>IVIG</b>：DAT 陽性且達升級門檻，0.5–1 g/kg 2 小時，可 12 小時後重複', 'KAS 21'],
+      ['<b>換血</b>：中晚期 ABE 徵象，或 TSB ≥ 換血門檻；備血時降到門檻下且無 ABE 可暫緩', 'KAS 22、23'],
+      ['<b>B/A 比</b>：≥ 38 週 8.0／7.2（有風險）；35–37 週 7.2／6.8（有風險）', 'III.F']
+    ] },
+    { head: '出院追蹤（未照光）', color: '#0dcaf0', leaves: [
+      ['<b>差值 0.1–1.9</b>：&lt; 24 h 延後出院，4–8 h 測 TSB；≥ 24 h 於 4–24 h 測 TSB', 'Fig 7'],
+      ['<b>2.0–3.4</b>：4–24 h 測 TSB 或 TcB', 'Fig 7'],
+      ['<b>3.5–5.4</b>：1–2 天', 'Fig 7'],
+      ['<b>5.5–6.9</b>：&lt; 72 h 出院者 2 天內回診', 'Fig 7'],
+      ['<b>≥ 7.0</b>：&lt; 72 h 出院者 3 天內回診', 'Fig 7'],
+      ['<b>衛教</b>：書面加口頭，附回診時間與最後膽紅素', 'KAS 25']
+    ] },
+    { head: '延長性黃疸', color: '#fd7e14', leaves: [
+      ['<b>母乳 3–4 週、配方奶 2 週仍黃</b>：測總及直接膽紅素，查新生兒篩檢', 'KAS 9'],
+      ['<b>會診腸胃科或專家</b>：配方奶寶寶延長黃疸，或母乳寶寶有直接高膽紅素', 'II.E'],
+      ['<b>≥ 7 天 TSB 仍在門檻 2 mg/dL 內</b>：多為母乳性黃疸，另考慮溶血、甲狀腺低下、血腫、Crigler-Najjar', 'III.B']
+    ] },
+    { head: '&lt; 35 週早產兒', color: '#6c757d', leaves: [
+      ['<b>依 PMA 分級</b>（光療／換血）：&lt; 28 週 5–6／11–14；28–29 週 6–8／12–14；30–31 週 8–10／13–16；32–33 週 10–12／15–18；34 週 12–14／17–19', 'Maisels 2012'],
+      ['<b>範圍下限</b>：白蛋白 &lt; 2.5、TSB 快速上升、臨床不穩定', 'Maisels 2012'],
+      ['<b>PMA ≥ 35 週</b>：仍留在最高一級，不換成 AAP 曲線', 'UNC 2025'],
+      ['<b>照光後 TcB</b>：資料不足', 'UNC 2025']
+    ] }
+  ];
+
+  // 轉成 JX.assess 的輸入
+  function stepInput(s) {
+    return {
+      ga: s.ga, gaDays: s.gaDays || 0, hours: s.hours, tsb: s.tsb, method: s.method || 'tsb',
+      risk: s.rf.length > 0, abe: !!s.abe, albumin: s.albumin == null ? null : s.albumin, prev: s.prev || null
+    };
+  }
+
+  return { CASES, QUIZ, MAP, stepInput };
+})();
+/*TEACH-END*/
 </script>
 <script>
   const $ = id => document.getElementById(id);
@@ -451,6 +806,7 @@ const JX = (() => {
       tsb: tsbRaw == null ? NaN : JX.toMg(tsbRaw, unit),
       method: document.querySelector('input[name="method"]:checked').value,
       risk: rfIds.length > 0,
+      rising: term && $('rfRising').checked,
       abe: $('abe').checked,
       albumin: num('albumin'),
       prev: (prevH != null && prevT != null) ? { hours: prevH, tsb: JX.toMg(prevT, unit) } : null
@@ -475,7 +831,7 @@ const JX = (() => {
 
     const L = LEVELS[r.level];
     const category = r.term
-      ? `${input.ga >= 40 ? '≥ 40' : input.ga} 週，AAP 2022 ${input.risk ? '有' : '無'}神經毒性風險因子曲線`
+      ? `${input.ga >= 40 ? '≥ 40' : input.ga} 週，AAP 2022 ${input.risk ? '有' : '無'}神經毒性風險因子曲線${input.rising && !input.risk ? '（照光中仍上升：換血門檻採 Fig 6）' : ''}`
       : `出生 ${input.ga} ${input.gaDays}/7 週 → 目前 PMA ${JX.pmaText(r.pma)}（Maisels 級距 ${r.label}，採${input.risk ? '下限' : '上限'}）`;
     const methodText = r.tcb ? 'TcB' : 'TSB';
 
@@ -498,7 +854,7 @@ const JX = (() => {
     $('thrTable').style.display = '';
 
     const notes = [...r.notes];
-    if (input.abe) notes.unshift('有急性膽紅素腦病變徵象：無論 TSB 數值皆建議立即換血。');
+    if (input.abe) notes.unshift('有中晚期急性膽紅素腦病變徵象：無論 TSB 數值皆應緊急換血（AAP 2022 KAS 22）。');
     $('resNotes').innerHTML = notes.map(n => `<li>${n}</li>`).join('');
     $('resNotes').style.display = notes.length ? '' : 'none';
 
@@ -506,7 +862,7 @@ const JX = (() => {
 
     latestData = {
       hours: input.hours, tsbText: `${fmt(input.tsb, unit)}（${methodText}${unit === 'umol' ? `，輸入 ${tsbRaw} µmol/L` : ''}）`,
-      category, risk: rfIds.length ? rfIds.map(id => RF_LABEL[id]).join('、') : '無',
+      category, risk: [...rfIds.map(id => RF_LABEL[id]), ...(input.rising ? ['照光中 TSB 仍上升'] : [])].join('、') || '無',
       rows: rows.slice(1), title: L.title, sub: L.sub, notes, color: L.print, bg: L.bg
     };
     $('printBtn').disabled = false;
@@ -517,7 +873,7 @@ const JX = (() => {
     const xMax = Math.min(336, Math.max(r.term ? 120 : 168, Math.ceil((input.hours + 24) / 24) * 24));
     let pt, et;
     if (r.term) {
-      const c = JX.aapCurve(input.ga, input.risk).filter(p => p.h <= xMax);
+      const c = JX.aapCurve(input.ga, input.risk, input.rising).filter(p => p.h <= xMax);
       pt = c.map(p => ({ x: p.h, y: p.pt }));
       et = c.map(p => ({ x: p.h, y: p.et }));
       [pt, et].forEach(a => a.unshift({ x: 0, y: a[0].y }));
@@ -590,6 +946,148 @@ const JX = (() => {
   $('jaundiceForm').addEventListener('submit', calculateJaundice);
   $('printBtn').addEventListener('click', printOrder);
   toggleGaInputs();
+
+  // ===== 分頁 =====
+  const TABS = ['tool', 'cases', 'quiz', 'map'];
+  function showTab(name) {
+    const tab = TABS.includes(name) ? name : 'tool';
+    TABS.forEach(t => { $(`tab-${t}`).hidden = t !== tab; });
+    document.querySelectorAll('#tabNav .nav-link').forEach(a => a.classList.toggle('active', a.dataset.tab === tab));
+  }
+  window.addEventListener('hashchange', () => showTab(location.hash.slice(1)));
+
+  // ===== 示範病例 =====
+  function stepVals(s) {
+    const rf = s.rf.map(id => RF_LABEL[id]);
+    if (s.abe) rf.push('ABE 徵象');
+    return [
+      `${s.ga}${s.gaDays ? ` ${s.gaDays}/7` : ''} 週`, `${s.hours} h`, `${s.method === 'tcb' ? 'TcB' : 'TSB'} ${s.tsb.toFixed(1)}`,
+      s.prev ? `前次 ${s.prev.hours} h ${s.prev.tsb.toFixed(1)}` : null,
+      s.albumin != null ? `白蛋白 ${s.albumin}` : null,
+      rf.length ? rf.join('、') : '無風險因子'
+    ].filter(Boolean).join('｜');
+  }
+
+  function renderCases() {
+    $('caseList').innerHTML = TEACH.CASES.map((c, ci) => `
+      <div class="card">
+        <div class="card-header">病例 ${ci + 1}：${c.title}<span class="badge text-bg-light border case-tag">${c.tag}</span></div>
+        <div class="card-body">
+          <p class="mb-2">${c.story}</p>
+          <p class="fw-bold text-primary">想一想：${c.ask}</p>
+          <details>
+            <summary class="text-primary mb-2">看判讀與解析</summary>
+            ${c.steps.map((s, si) => {
+              const r = JX.assess(TEACH.stepInput(s));
+              const L = LEVELS[r.level];
+              return `<div class="case-step">
+                <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
+                  <strong>${s.label}</strong>
+                  <button type="button" class="btn btn-sm btn-outline-primary" data-case="${ci}" data-step="${si}">帶入工具</button>
+                </div>
+                <div class="step-vals">${stepVals(s)}</div>
+                <div class="step-result ${L.cls}">${L.title}<small>光療門檻 ${r.pt.toFixed(1)}${r.term ? `｜升級 ${r.esc.toFixed(1)}` : ''}｜換血 ${r.et.toFixed(1)} mg/dL</small></div>
+                <div>${s.why}</div>
+              </div>`;
+            }).join('')}
+            <h6 class="mt-3">教學重點</h6>
+            <ul class="teach-list mb-2">${c.points.map(p => `<li>${p}</li>`).join('')}</ul>
+            <div class="src-note">出處：${c.src}</div>
+          </details>
+        </div>
+      </div>`).join('');
+  }
+
+  function loadCase(ci, si) {
+    const s = TEACH.CASES[ci].steps[si];
+    $('gaWeeks').value = s.ga;
+    $('gaDays').value = s.gaDays || 0;
+    toggleGaInputs();
+    document.querySelectorAll('.rf, .rfp').forEach(c => { c.checked = s.rf.includes(c.id); });
+    $('rfRising').checked = false;
+    $('abe').checked = !!s.abe;
+    $('hoursOfLife').value = s.hours;
+    $('tsbValue').value = s.tsb;
+    $('unit').value = 'mg';
+    $(s.method === 'tcb' ? 'mTcb' : 'mTsb').checked = true;
+    $('dob').value = ''; $('dom').value = '';
+    $('prevHours').value = s.prev ? s.prev.hours : '';
+    $('prevTsb').value = s.prev ? s.prev.tsb : '';
+    $('albumin').value = s.albumin == null ? '' : s.albumin;
+    location.hash = 'tool';
+    showTab('tool');
+    calculateJaundice();
+    window.scrollTo(0, 0);
+  }
+
+  $('caseList').addEventListener('click', e => {
+    const b = e.target.closest('[data-case]');
+    if (b) loadCase(Number(b.dataset.case), Number(b.dataset.step));
+  });
+
+  // ===== 考題 =====
+  let quizDone = {};
+  function renderQuizScore() {
+    const n = Object.keys(quizDone).length;
+    const right = Object.values(quizDone).filter(Boolean).length;
+    $('quizScore').textContent = `已答 ${n} / ${TEACH.QUIZ.length} 題，答對 ${right} 題`;
+  }
+  function renderQuiz() {
+    quizDone = {};
+    let lv = '';
+    $('quizList').innerHTML = TEACH.QUIZ.map((q, i) => {
+      const head = q.lv !== lv ? `<h5 class="mt-3">${q.lv}題</h5>` : '';
+      lv = q.lv;
+      return `${head}<div class="card" data-q="${i}"><div class="card-body">
+        <p class="fw-bold mb-2">${i + 1}. ${q.q}</p>
+        ${q.o.map((o, j) => `<button type="button" class="quiz-opt" data-opt="${j}">${'ABCD'[j]}. ${o}</button>`).join('')}
+        <div class="quiz-ex" hidden><strong>正解 ${'ABCD'[q.a]}。</strong>${q.ex}<div class="src-note mt-1">出處：${q.src}</div></div>
+      </div></div>`;
+    }).join('');
+    renderQuizScore();
+  }
+  $('quizList').addEventListener('click', e => {
+    const b = e.target.closest('.quiz-opt');
+    if (!b) return;
+    const card = b.closest('[data-q]');
+    const i = Number(card.dataset.q), pick = Number(b.dataset.opt), q = TEACH.QUIZ[i];
+    card.querySelectorAll('.quiz-opt').forEach((o, j) => {
+      o.disabled = true;
+      if (j === q.a) o.classList.add('right');
+      else if (j === pick) o.classList.add('wrong');
+    });
+    card.querySelector('.quiz-ex').hidden = false;
+    quizDone[i] = pick === q.a;
+    renderQuizScore();
+  });
+  $('quizReset').addEventListener('click', () => { renderQuiz(); window.scrollTo(0, 0); });
+
+  // ===== 心智圖 =====
+  function renderMap() {
+    $('mapTree').innerHTML = TEACH.MAP.map((b, i) => `
+      <div class="mm-branch" style="--mm:${b.color}">
+        <button type="button" class="mm-head" aria-expanded="true" aria-controls="mm-${i}">${b.head}</button>
+        <ul class="mm-leaves" id="mm-${i}">${b.leaves.map(([t, tag]) => `<li>${t}<span class="mm-tag">${tag}</span></li>`).join('')}</ul>
+      </div>`).join('');
+  }
+  $('mapTree').addEventListener('click', e => {
+    const h = e.target.closest('.mm-head');
+    if (!h) return;
+    const open = h.getAttribute('aria-expanded') === 'true';
+    h.setAttribute('aria-expanded', String(!open));
+    h.nextElementSibling.hidden = open;
+  });
+  $('mapToggle').addEventListener('click', e => {
+    const close = e.target.textContent === '全部收合';
+    e.target.textContent = close ? '全部展開' : '全部收合';
+    document.querySelectorAll('.mm-head').forEach(h => h.setAttribute('aria-expanded', String(!close)));
+    document.querySelectorAll('.mm-leaves').forEach(u => { u.hidden = close; });
+  });
+
+  renderCases();
+  renderQuiz();
+  renderMap();
+  showTab(location.hash.slice(1));
 
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     navigator.serviceWorker.register('sw.js').catch(() => {});

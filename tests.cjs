@@ -95,5 +95,77 @@ eq('NaN tsb rejected', !!JX.assess({ ...base, tsb: NaN }).errors, true);
 eq('prev after current rejected', !!JX.assess({ ...base, tsb: 10, prev: { hours: 50, tsb: 8 } }).errors, true);
 near('umol', JX.toMg(342, 'umol'), 20, 1e-9);
 
+// Teaching block: every case step must match the engine, quiz shape fixed
+const t = src.match(/\/\*TEACH-START\*\/([\s\S]*?)\/\*TEACH-END\*\//);
+const TEACH = new Function(t[1] + '; return TEACH;')();
+eq('6 cases', TEACH.CASES.length, 6);
+const RF_TERM = ['rfAlb', 'rfIso', 'rfG6pd', 'rfHemo', 'rfSepsis', 'rfUnstable'], RF_PRE = ['rpAlb', 'rpRise', 'rpUnstable'];
+for (const c of TEACH.CASES) for (const s of c.steps) {
+  const r = JX.assess(TEACH.stepInput(s)), n = `${c.id} ${s.label}`;
+  eq(`${n} level`, r.level, s.expect.level);
+  eq(`${n} pt`, r.pt, s.expect.pt);
+  eq(`${n} et`, r.et, s.expect.et);
+  eq(`${n} rf ids`, s.rf.every(id => (s.ga >= 35 ? RF_TERM : RF_PRE).includes(id)), true);
+}
+const st = (c, i) => JX.assess(TEACH.stepInput(TEACH.CASES[c].steps[i]));
+eq('c1 follow-up', st(0, 1).followUp, '4–24 小時內追蹤 TSB 或 TcB');
+eq('c1 diff', st(0, 1).diffPt, 3.4);
+eq('c2 stop', st(1, 0).stopPt, 18.7);
+eq('c3 rate', st(2, 0).rate.perH, 0.4);
+eq('c3 esc', st(2, 1).esc, 14.5);
+eq('c4 esc', st(3, 1).esc, 21.5);
+eq('c4 ba', [st(3, 1).ba.ratio, st(3, 1).ba.limit, st(3, 1).ba.over], [6.9, 7.2, false]);
+eq('c5 ba', [st(4, 0).ba.over, st(4, 1).ba.ratio, st(4, 1).ba.over, st(4, 2).ba.over], [false, 7, true, false]);
+eq('c5 esc', [st(4, 0).esc, st(4, 2).esc], [16.3, 16.9]);
+eq('c6 pma', JX.pmaText(st(5, 0).pma), '30 5/7 週');
+eq('c6 pma day14', JX.pmaText(st(5, 2).pma), '32 0/7 週');
+
+const Q = TEACH.QUIZ;
+eq('20 questions', Q.length, 20);
+eq('10 basic', Q.filter(q => q.lv === '基礎').length, 10);
+eq('10 advanced', Q.filter(q => q.lv === '高階').length, 10);
+eq('answers A–D 5 each', [0, 1, 2, 3].map(a => Q.filter(q => q.a === a).length), [5, 5, 5, 5]);
+Q.forEach((q, i) => {
+  eq(`q${i + 1} 4 options`, new Set(q.o).size, 4);
+  eq(`q${i + 1} has source`, !!q.src && !!q.ex, true);
+});
+eq('correct option rarely the sole longest', Q.filter(q => q.o.every((o, j) => j === q.a || o.length < q.o[q.a].length)).length <= 4, true);
+// numbers stated in the quiz
+const A = (ga, h, risk, tsb, extra) => JX.assess({ ...base, ga, hours: h, risk, tsb, ...extra });
+eq('q8', A(40, 48, false, 18).stopPt, 15);
+eq('q10', [A(39, 60, false, 10).et, A(39, 60, false, 10).esc], [25.1, 23.1]);
+eq('q11', [A(39, 60, true, 16).pt, A(39, 60, true, 16).esc, A(39, 60, true, 16).et, A(39, 60, false, 16).pt], [15.4, 19.2, 21.2, 18.1]);
+eq('q11 level', A(39, 60, true, 16).level, 'photo');
+eq('q15', [A(37, 48, true, 20).et, A(37, 48, true, 20).level, A(37, 48, true, 19.2).level], [19.7, 'exchange', 'escalation']);
+eq('q18', [A(37, 60, true, 17, { albumin: 2.4 }).ba.ratio, A(37, 60, true, 17, { albumin: 2.4 }).ba.limit, A(37, 60, true, 17).et], [7.1, 6.8, 20.7]);
+eq('q19', [A(39, 48, false, 10.6).pt, A(39, 48, false, 10.6).diffPt], [16.6, 6]);
+eq('q19 fu', A(39, 48, false, 10.6).followUp.startsWith('出院後 2 天'), true);
+const q20 = JX.maisels(28, 0, 336, true);
+eq('q20', [q20.pt, q20.et, JX.pmaText(q20.pma)], [8, 13, '30 0/7 週']);
+eq('map has 8 branches', TEACH.MAP.length, 8);
+// map's preterm line restates the engine's table
+for (const r of JX.MAISELS) eq(`map row ${r.label}`, TEACH.MAP[7].leaves[0][0].includes(`${r.pt.join('–')}／${r.et.join('–')}`), true);
+
+// Corrections against AAP 2022 text
+const rise = { ...base, rising: true };
+eq('rising: exchange uses Fig 6', JX.assess({ ...rise, tsb: 19 }).et, 20.1);
+eq('rising: esc follows', JX.assess({ ...rise, tsb: 19 }).esc, 18.1);
+eq('rising: phototherapy threshold unchanged', JX.assess({ ...rise, tsb: 19 }).pt, 17);
+eq('rising changes level', [JX.assess({ ...base, tsb: 19 }).level, JX.assess({ ...rise, tsb: 19 }).level], ['photo', 'escalation']);
+eq('rising: no Fig 7 advice', JX.assess({ ...rise, tsb: 10 }).followUp, undefined);
+eq('rising curve', JX.aapCurve(40, false, true).find(p => p.h === 48).et, 20.1);
+eq('rising ignored <35', JX.assess({ ...base, ga: 30, tsb: 10, rising: true }).et, 16);
+eq('Fig 7 none <12 h', JX.assess({ ...base, hours: 11, tsb: 3 }).followUp, undefined);
+eq('Fig 7 shown at 12 h', !!JX.assess({ ...base, hours: 12, tsb: 3 }).followUp, true);
+eq('<12 h note', JX.assess({ ...base, hours: 11, tsb: 3 }).notes.some(n => n.includes('24–48')), true);
+eq('no <12 h note at 12 h', JX.assess({ ...base, hours: 12, tsb: 3 }).notes.some(n => n.includes('24–48')), false);
+const tcbNote = o => JX.assess({ ...base, method: 'tcb', tsb: 5, ...o }).notes.find(n => n.startsWith('TcB'));
+eq('TcB note term', tcbNote({}).includes('滿 24 小時'), true);
+eq('TcB note preterm', tcbNote({ ga: 30 }).includes('資料不足'), true);
+const html = s => src.includes(s);
+eq('ABE label drops early signs', html('發燒、嗜睡且吸吮差'), false);
+eq('ABE label KAS 22 signs', html('反覆呼吸中止。單純嗜睡'), true);
+eq('rebound tip fixed', html('其他則 1–2 天後追'), false);
+
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
