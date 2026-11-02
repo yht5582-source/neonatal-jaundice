@@ -1,5 +1,5 @@
 // 離線快取：頁面採 network-first（確保門檻更新），CDN 資源採 cache-first
-const CACHE = 'jaundice-v2.1';
+const CACHE = 'jaundice-v2.2';
 const ASSETS = [
   './', './index.html', './manifest.json', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png',
   'https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css',

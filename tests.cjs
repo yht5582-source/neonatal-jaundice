@@ -141,10 +141,29 @@ eq('q18', [A(37, 60, true, 17, { albumin: 2.4 }).ba.ratio, A(37, 60, true, 17, {
 eq('q19', [A(39, 48, false, 10.6).pt, A(39, 48, false, 10.6).diffPt], [16.6, 6]);
 eq('q19 fu', A(39, 48, false, 10.6).followUp.startsWith('出院後 2 天'), true);
 const q20 = JX.maisels(28, 0, 336, true);
-eq('q20', [q20.pt, q20.et, JX.pmaText(q20.pma)], [8, 13, '30 0/7 週']);
+eq('q20', [q20.pt, q20.et, JX.pmaText(q20.pma)], [8, 12, '30 0/7 週']);
+eq('q20 answer', TEACH.QUIZ[19].o[TEACH.QUIZ[19].a], '光療 8；換血 12');
 eq('map has 8 branches', TEACH.MAP.length, 8);
 // map's preterm line restates the engine's table
 for (const r of JX.MAISELS) eq(`map row ${r.label}`, TEACH.MAP[7].leaves[0][0].includes(`${r.pt.join('–')}／${r.et.join('–')}`), true);
+
+// Corrections against Maisels 2012 Table 1 footnotes
+eq('exchange stays at birth GA', [JX.maisels(30, 0, 336, true).et, JX.maisels(30, 0, 336, false).et], [13, 16]);
+eq('exchange range birth GA', JX.maisels(30, 0, 336, true).etRange, [13, 16]);
+eq('phototherapy still moves with PMA', JX.maisels(30, 0, 336, true).pt, 10);
+eq('labels split', [JX.maisels(30, 0, 336, true).label, JX.maisels(30, 0, 336, true).etLabel], ['32 0/7 – 33 6/7 週', '30 0/7 – 31 6/7 週']);
+eq('29 6/7 day 1: pt moves, et stays', [JX.maisels(29, 6, 24, false).pt, JX.maisels(29, 6, 24, false).et], [10, 14]);
+const pre = { ...base, ga: 30, hours: 120 };
+eq('preterm stop range', JX.assess({ ...pre, tsb: 11 }).stopRange, [8, 9]);
+eq('term has no stop range', JX.assess({ ...base, tsb: 18 }).stopRange, undefined);
+const hasNote = (o, t) => JX.assess(o).notes.some(n => n.includes(t));
+eq('exchange premise note', hasNote({ ...pre, tsb: 16 }, '最大面積強效照光'), true);
+eq('no premise note below', hasNote({ ...pre, tsb: 15 }, '最大面積強效照光'), false);
+eq('no premise note term', hasNote({ ...base, tsb: 24 }, '最大面積強效照光'), false);
+eq('no premise note with ABE', hasNote({ ...pre, tsb: 16, abe: true }, '最大面積強效照光'), false);
+eq('≤1000 g note at phototherapy', hasNote({ ...pre, tsb: 10 }, '1000 g'), true);
+eq('no ≤1000 g note below', hasNote({ ...pre, tsb: 9 }, '1000 g'), false);
+eq('unstable definition shown', src.includes('血液 pH &lt; 7.15'), true);
 
 // Corrections against AAP 2022 text
 const rise = { ...base, rising: true };

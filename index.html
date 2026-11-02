@@ -154,15 +154,15 @@
               <div class="risk-list">
                 <div class="form-check"><input class="form-check-input rfp" type="checkbox" id="rpAlb"><label class="form-check-label" for="rpAlb">白蛋白 &lt; 2.5 g/dL</label></div>
                 <div class="form-check"><input class="form-check-input rfp" type="checkbox" id="rpRise"><label class="form-check-label" for="rpRise">TSB 快速上升（疑溶血）</label></div>
-                <div class="form-check"><input class="form-check-input rfp" type="checkbox" id="rpUnstable"><label class="form-check-label" for="rpUnstable">臨床不穩定</label></div>
+                <div class="form-check"><input class="form-check-input rfp" type="checkbox" id="rpUnstable"><label class="form-check-label" for="rpUnstable">臨床不穩定<br><small class="text-muted">符合任一項：血液 pH &lt; 7.15；過去 24 小時血液培養陽性的敗血症、因呼吸中止與心搏過緩需復甦、因低血壓需升壓劑；採血時使用呼吸器</small></label></div>
               </div>
-              <div class="form-text">早產兒門檻依「矯正週數 (PMA = 出生週數＋出生天數)」選取；隨日齡增加自動往上一級。</div>
+              <div class="form-text">光療門檻依矯正週數 (PMA = 出生週數＋出生天數)，隨日齡往上一級；換血門檻依出生週數。週數較低也是採下限的例子，原文未給切點，請依臨床判斷。所有早產兒都應測白蛋白。</div>
             </div>
 
             <div class="form-check mb-3 text-danger">
               <input type="checkbox" class="form-check-input" id="abe">
               <label class="form-check-label" for="abe"><strong>出現中晚期急性膽紅素腦病變徵象</strong><br>
-                <small class="text-muted">張力過高、弓背、後頸弓、角弓反張、高頻哭聲、反覆呼吸中止。單純嗜睡、吸吮差不勾選，請依 TSB 判斷並儘速評估。</small></label>
+                <small class="text-muted" id="abeSigns">張力過高、弓背、後頸弓、角弓反張、高頻哭聲、反覆呼吸中止。單純嗜睡、吸吮差不勾選，請依 TSB 判斷並儘速評估。</small></label>
             </div>
 
             <hr>
@@ -245,6 +245,7 @@
               <li><strong>照護升級 (Escalation of care)</strong>：TSB ≥ 換血門檻 −2 mg/dL → 強效照光、靜脈輸液、CBC、血型與交叉配血、白蛋白、直接膽紅素，每 2 小時追 TSB；同族免疫溶血者考慮 IVIG 0.5–1 g/kg（2 小時輸注，可於 12 小時後重複）。</li>
               <li><strong>停止照光</strong>：TSB 降至「開始照光當時該時數的光療門檻」以下至少 2 mg/dL；&lt; 38 週、&lt; 48 小時開始照光或有溶血，可考慮照久一點。</li>
               <li><strong>停光後追蹤</strong>：出生住院期間照光，且 &lt; 48 小時開始、DAT 陽性或已知／疑似溶血 → 6–12 小時測 TSB，隔天再測。其他出生住院期間照光者、曾照光後再入院者 → 隔天測。再入院但出生時未照光、或居家光療者 → 1–2 天內測膽紅素或臨床追蹤。停光滿 24 小時後可考慮改測 TcB。</li>
+              <li><strong>&lt; 35 週</strong>：換血門檻適用於已接受最大面積強效照光、TSB 仍上升者；TSB 低於該 PMA 起始門檻 1–2 mg/dL 可停光；TSB 下降且不再需要照光時可停止追蹤。≤ 26 週可選擇出生後不久預防性照光。</li>
               <li>可在 TSB 略低於門檻時依臨床判斷提早照光。台灣 G6PD 缺乏症常見，請查閱新生兒篩檢結果。</li>
               <li>本工具僅供臨床參考，不取代醫師判斷。</li>
             </ul>
@@ -377,13 +378,16 @@ const JX = (() => {
     return AAP.ages.map((h, i) => ({ h, pt: (risk ? c.pr : c.pn)[i], et: (risk || rising ? c.er : c.en)[i] }));
   }
 
-  // <35 wk: postmenstrual age = GA + postnatal days.
+  // <35 wk: postmenstrual age = GA + postnatal days. Maisels Table 1 footnote assigns PMA to
+  // phototherapy only, so the exchange row stays at the birth GA.
   function maisels(gaWeeks, gaDays, hours, risk) {
-    const pma = gaWeeks + (gaDays || 0) / 7 + Math.max(0, hours) / 24 / 7;
+    const ga = gaWeeks + (gaDays || 0) / 7;
+    const pma = ga + Math.max(0, hours) / 24 / 7;
     const row = MAISELS.find(r => pma < r.maxPma);
+    const etRow = MAISELS.find(r => ga < r.maxPma);
     return {
-      pma, label: row.label, ptRange: row.pt, etRange: row.et,
-      pt: risk ? row.pt[0] : row.pt[1], et: risk ? row.et[0] : row.et[1]
+      pma, label: row.label, etLabel: etRow.label, ptRange: row.pt, etRange: etRow.et,
+      pt: risk ? row.pt[0] : row.pt[1], et: risk ? etRow.et[0] : etRow.et[1]
     };
   }
 
@@ -457,12 +461,15 @@ const JX = (() => {
     if (term && !i.abe && !i.rising && i.hours >= 12 && (out.level === 'below' || out.level === 'near' || (tcb && out.level === 'tcb-confirm' && i.tsb < t.pt)))
       out.followUp = followUp(out.diffPt, i.hours);
     if (term) out.stopPt = r1(t.pt - 2);
+    else out.stopRange = [t.pt - 2, t.pt - 1];
     out.rate = rate(i.prev, { hours: i.hours, tsb: i.tsb });
     if (i.albumin) {
       const ratio = i.tsb / i.albumin;
       const limit = term ? baLimit(i.ga, i.risk) : null;
       out.ba = { ratio: Math.round(ratio * 10) / 10, limit, over: limit != null && ratio >= limit };
     }
+    if (!term && !i.abe && !tcb && i.tsb >= t.et) out.notes.push('Maisels 的換血門檻適用於已接受最大面積強效照光、TSB 仍持續上升的嬰兒；尚未強效照光者請立即開始並儘速複測。');
+    if (!term && !tcb && i.tsb >= t.pt) out.notes.push('出生體重 ≤ 1000 g：宜從較低輻照度開始；TSB 仍上升時先增加照射面積，再提高輻照度。');
     if (term && !i.abe && i.hours < 12 && i.tsb < t.pt) out.notes.push('出生未滿 12 小時，Fig 7 的追蹤建議不適用；若此時出院，應在出生 24–48 小時之間測膽紅素。');
     if (i.hours < 24) out.notes.push('出生 24 小時內出現黃疸視為異常，應儘速測 TSB 並評估溶血（DAT、血型、CBC、G6PD）。');
     if (out.rate && out.rate.rapid) out.notes.push(`上升速率 ${out.rate.perH} mg/dL/h ≥ ${out.rate.limit}，提示溶血：測 DAT、CBC＋網狀紅血球、G6PD；確認溶血時請勾選神經毒性風險因子。`);
@@ -590,26 +597,29 @@ const TEACH = (() => {
     {
       id: 'c6', title: '30 週早產兒', tag: '&lt; 35 週',
       story: '30 0/7 週女嬰，NICU 住院，出生第 5 天（120 h）TSB 9.2，接著回報白蛋白 2.3。第 14 天（336 h）TSB 仍為 9.2，白蛋白仍低。',
-      ask: '為什麼不能用 AAP 曲線？第 14 天的門檻為什麼和第 5 天不同？',
+      ask: '為什麼不能用 AAP 曲線？到第 14 天，哪個門檻會變、哪個不變？',
       steps: [
         { label: '第 5 天，白蛋白未回', ga: 30, hours: 120, tsb: 9.2, rf: [],
           expect: { level: 'below', pt: 10, et: 16 },
-          why: 'PMA 30 5/7 週，落在 30 0/7–31 6/7 週級距（光療 8–10、換血 13–16），無高風險時工具採上限 10。' },
+          why: 'PMA 30 5/7 週，光療依 PMA、換血依出生週數，都落在 30 0/7–31 6/7 週級距（光療 8–10、換血 13–16）。無高風險時工具採上限，光療 10。' },
         { label: '第 5 天，白蛋白 2.3', ga: 30, hours: 120, tsb: 9.2, rf: ['rpAlb'], albumin: 2.3,
           expect: { level: 'photo', pt: 8, et: 13 },
           why: '白蛋白 &lt; 2.5 為高風險，採下限：光療 8、換血 13，TSB 9.2 達光療標準。' },
         { label: '第 14 天，白蛋白 2.3', ga: 30, hours: 336, tsb: 9.2, rf: ['rpAlb'], albumin: 2.3,
-          expect: { level: 'below', pt: 10, et: 15 },
-          why: 'PMA 已到 32 0/7 週，往上一級：下限光療 10、換血 15，同一數值已低於光療門檻。' }
+          expect: { level: 'below', pt: 10, et: 13 },
+          why: 'PMA 已到 32 0/7 週，光療往上一級，下限 10，同一數值已低於光療門檻；換血門檻仍依出生週數，下限 13。' }
       ],
       points: [
-        'AAP 2022 只適用於 ≥ 35 週；&lt; 35 週用 Maisels 2012 的共識範圍，依矯正週數分級。',
-        '出生 &lt; 35 週者，矯正週數超過 35 週後仍留在最高一級，不改用 AAP 曲線。',
+        'AAP 2022 只適用於 ≥ 35 週；&lt; 35 週用 Maisels 2012 的共識範圍。原文註腳只指定光療用 PMA，所以工具的換血門檻固定在出生週數（UNC 2025 則把兩者都標為 PMA）。',
+        '採下限的例子：週數較低、白蛋白 &lt; 2.5、TSB 快速上升、臨床不穩定。',
+        '換血門檻適用於已接受最大面積強效照光、TSB 仍上升者；出現急性膽紅素腦病變徵象則都建議換血。',
+        'TSB 低於該 PMA 起始門檻 1–2 mg/dL 可停光。出生體重 ≤ 1000 g 宜從較低輻照度開始。',
+        '出生 &lt; 35 週者，矯正週數超過 35 週後光療門檻仍留在最高一級，不改用 AAP 曲線。',
         '這張表沒有 AAP 的「換血 − 2」升級帶，工具也不顯示。',
         '&lt; 35 週嬰兒照光後使用 TcB 的資料不足。',
         '極低出生體重：Morris 2008 積極照光減少重度神經發展障礙，但 Bayesian 分析估計 &lt; 750 g 者死亡風險增加的機率達 89%，要權衡。'
       ],
-      src: 'Maisels 2012 門檻表（經 MSD Manual 與 UNC NCCC 2025 指引轉載核對）；Morris 2008 與 TcB 敘述取自 UNC NCCC 2025 指引'
+      src: 'Maisels 2012 Table 1 與註腳；PMA ≥ 35 週、TcB 與 Morris 2008 的敘述取自 UNC NCCC 2025 指引'
     }
   ];
 
@@ -674,8 +684,8 @@ const TEACH = (() => {
       o: ['4–24 小時內再測', '延後出院並開始照光，隔天再測 TSB 決定', '不需要安排追蹤', '2 天內回診，是否測依臨床判斷'], a: 3,
       ex: '差值 6.0，落在 5.5–6.9 且 &lt; 72 小時出院。Fig 7 只適用於 ≥ 12 小時且未照光的嬰兒。', src: 'KAS 24；Fig 7' },
     { lv: '高階', q: '28 0/7 週早產兒，出生第 14 天，白蛋白 2.3，應使用的光療與換血門檻？',
-      o: ['光療 6；換血 12', '光療 10；換血 16', '光療 8；換血 13', '改用 AAP 35 週曲線'], a: 2,
-      ex: '矯正週數 30 0/7，落在 30 0/7–31 6/7 週級距；白蛋白 &lt; 2.5 採下限。', src: 'Maisels 2012 門檻表' }
+      o: ['光療 6；換血 12', '光療 8；換血 13', '光療 8；換血 12', '改用 AAP 35 週曲線'], a: 2,
+      ex: '光療依 PMA 30 0/7 週，下限 8；原文只指定光療用 PMA，換血仍依出生 28 週那一級，下限 12。白蛋白 &lt; 2.5 採下限。', src: 'Maisels 2012 Table 1 與註腳' }
   ];
 
   const MAP = [
@@ -729,9 +739,13 @@ const TEACH = (() => {
       ['<b>≥ 7 天 TSB 仍在門檻 2 mg/dL 內</b>：多為母乳性黃疸，另考慮溶血、甲狀腺低下、血腫、Crigler-Najjar', 'III.B']
     ] },
     { head: '&lt; 35 週早產兒', color: '#6c757d', leaves: [
-      ['<b>依 PMA 分級</b>（光療／換血）：&lt; 28 週 5–6／11–14；28–29 週 6–8／12–14；30–31 週 8–10／13–16；32–33 週 10–12／15–18；34 週 12–14／17–19', 'Maisels 2012'],
-      ['<b>範圍下限</b>：白蛋白 &lt; 2.5、TSB 快速上升、臨床不穩定', 'Maisels 2012'],
-      ['<b>PMA ≥ 35 週</b>：仍留在最高一級，不換成 AAP 曲線', 'UNC 2025'],
+      ['<b>光療依 PMA、換血依出生週數</b>（光療／換血）：&lt; 28 週 5–6／11–14；28–29 週 6–8／12–14；30–31 週 8–10／13–16；32–33 週 10–12／15–18；34 週 12–14／17–19', 'Maisels 2012'],
+      ['<b>範圍下限</b>：週數較低、白蛋白 &lt; 2.5、TSB 快速上升、臨床不穩定', 'Maisels 2012'],
+      ['<b>臨床不穩定</b>：pH &lt; 7.15；24 小時內培養陽性敗血症、呼吸中止與心搏過緩需復甦、低血壓需升壓劑；採血時用呼吸器', 'Maisels 2012'],
+      ['<b>換血</b>：最大面積強效照光下 TSB 仍升到門檻；有 ABE 徵象都建議', 'Maisels 2012'],
+      ['<b>停光</b>：低於該 PMA 起始門檻 1–2 mg/dL', 'Maisels 2012'],
+      ['<b>≤ 1000 g</b>：從較低輻照度開始，仍升先加面積，再提高輻照度', 'Maisels 2012'],
+      ['<b>PMA ≥ 35 週</b>：光療門檻仍留在最高一級，不換成 AAP 曲線', 'UNC 2025'],
       ['<b>照光後 TcB</b>：資料不足', 'UNC 2025']
     ] }
   ];
@@ -782,6 +796,9 @@ const TEACH = (() => {
     $('termInputs').style.display = preterm ? 'none' : 'block';
     $('pretermInputs').style.display = preterm ? 'block' : 'none';
     $('gaDaysWrap').style.visibility = preterm ? 'visible' : 'hidden';
+    $('abeSigns').textContent = preterm
+      ? '張力過高、弓背、後頸弓、角弓反張、高頻哭聲（極低出生體重兒很少出現）。單純嗜睡、吸吮差不勾選，請依 TSB 判斷並儘速評估。'
+      : '張力過高、弓背、後頸弓、角弓反張、高頻哭聲、反覆呼吸中止。單純嗜睡、吸吮差不勾選，請依 TSB 判斷並儘速評估。';
   }
 
   function calcAgeFromDates() {
@@ -832,7 +849,7 @@ const TEACH = (() => {
     const L = LEVELS[r.level];
     const category = r.term
       ? `${input.ga >= 40 ? '≥ 40' : input.ga} 週，AAP 2022 ${input.risk ? '有' : '無'}神經毒性風險因子曲線${input.rising && !input.risk ? '（照光中仍上升：換血門檻採 Fig 6）' : ''}`
-      : `出生 ${input.ga} ${input.gaDays}/7 週 → 目前 PMA ${JX.pmaText(r.pma)}（Maisels 級距 ${r.label}，採${input.risk ? '下限' : '上限'}）`;
+      : `出生 ${input.ga} ${input.gaDays}/7 週 → 目前 PMA ${JX.pmaText(r.pma)}；光療級距 ${r.label}（依 PMA）、換血級距 ${r.etLabel}（依出生週數），採${input.risk ? '下限' : '上限'}`;
     const methodText = r.tcb ? 'TcB' : 'TSB';
 
     $('resActionBox').className = `result-box ${L.cls}`;
@@ -847,6 +864,7 @@ const TEACH = (() => {
       ['距光療門檻', r.diffPt > 0 ? `低 ${fmt(r.diffPt, unit)}` : `超過 ${fmt(-r.diffPt, unit)}`],
       r.followUp ? ['出院／追蹤建議（未照光）', r.followUp] : null,
       r.term ? ['若此時開始照光，可停止照光於', `TSB ≤ ${fmt(r.stopPt, unit)}`] : null,
+      !r.term ? ['停止照光參考（低於該 PMA 起始門檻 1–2）', `TSB ${fmt(r.stopRange[0], unit)}–${fmt(r.stopRange[1], unit)}`] : null,
       r.rate ? ['上升速率', `${r.rate.perH} mg/dL/h${r.rate.rapid ? ' ⚠️' : ''}`] : null,
       r.ba ? ['TSB/白蛋白比', `${r.ba.ratio}${r.ba.limit ? `（換血考量 ≥ ${r.ba.limit}）` : ''}`] : null
     ].filter(Boolean);
