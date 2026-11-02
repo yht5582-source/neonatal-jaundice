@@ -122,7 +122,7 @@ eq('c6 pma day14', JX.pmaText(st(5, 2).pma), '32 0/7 週');
 
 const Q = TEACH.QUIZ;
 eq('20 questions', Q.length, 20);
-eq('10 basic', Q.filter(q => q.lv === '基礎').length, 10);
+eq('10 general', Q.filter(q => q.lv === '一般').length, 10);
 eq('10 advanced', Q.filter(q => q.lv === '高階').length, 10);
 eq('answers A–D 5 each', [0, 1, 2, 3].map(a => Q.filter(q => q.a === a).length), [5, 5, 5, 5]);
 Q.forEach((q, i) => {

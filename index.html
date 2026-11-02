@@ -268,9 +268,15 @@
   </div>
 
   <div class="tab-panel" id="tab-quiz" hidden>
-    <div class="quiz-score d-flex justify-content-between align-items-center">
-      <strong id="quizScore"></strong>
-      <button type="button" class="btn btn-sm btn-outline-secondary" id="quizReset">重新作答</button>
+    <div class="quiz-score">
+      <ul class="nav nav-pills tab-nav mb-2" id="quizLevels">
+        <li class="nav-item"><button type="button" class="nav-link active" data-lv="一般">一般考題</button></li>
+        <li class="nav-item"><button type="button" class="nav-link" data-lv="高階">高階考題</button></li>
+      </ul>
+      <div class="d-flex justify-content-between align-items-center">
+        <strong id="quizScore"></strong>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="quizReset">重新作答</button>
+      </div>
     </div>
     <div id="quizList"></div>
   </div>
@@ -625,34 +631,34 @@ const TEACH = (() => {
 
   // a = 正解索引。固定順序、A–D 各 5 題。
   const QUIZ = [
-    { lv: '基礎', q: '純母乳寶寶體重略減，家屬問可否餵糖水預防黃疸，建議是？',
+    { lv: '一般', q: '純母乳寶寶體重略減，家屬問可否餵糖水預防黃疸，建議是？',
       o: ['可以，每次餵奶後補少量糖水', '不建議，應協助有效哺乳', '白開水可以，糖水不行', 'TSB 接近光療門檻時才補糖水'], a: 1,
       ex: '不應以水或糖水預防或降低膽紅素。臨床建議每 24 小時至少哺乳 8 次。', src: 'KAS 2' },
-    { lv: '基礎', q: 'TcB 符合哪個條件時要抽血測 TSB？',
+    { lv: '一般', q: 'TcB 符合哪個條件時要抽血測 TSB？',
       o: ['TcB 超過光療門檻才抽，未達門檻時一律依 TcB 決定處置', 'TcB 高於光療門檻 1 mg/dL', 'TcB ≥ 20 mg/dL', 'TcB 距光療門檻 ≤ 3 或已超過，或 TcB ≥ 15'], a: 3,
       ex: 'TSB 在 15 mg/dL 以下時與 TcB 的差距通常在 3 mg/dL 內，所以設這兩個條件。', src: 'KAS 6' },
-    { lv: '基礎', q: '下列何者「不是」AAP 2022 的神經毒性風險因子？',
+    { lv: '一般', q: '下列何者「不是」AAP 2022 的神經毒性風險因子？',
       o: ['白蛋白低於 3.0 g/dL', '過去 24 小時明顯臨床不穩定', '純母乳且攝取不足', 'DAT 陽性的同族免疫溶血'], a: 2,
       ex: '攝取不足會增加發生高膽紅素血症的風險（Table 1），但不在神經毒性風險因子（Table 2）裡，不影響曲線選擇。', src: 'Table 1、Table 2' },
-    { lv: '基礎', q: '出生 16 小時護理師發現嬰兒已有黃疸，下一步？',
+    { lv: '一般', q: '出生 16 小時護理師發現嬰兒已有黃疸，下一步？',
       o: ['立即測 TcB 或 TSB', '等 24–48 小時常規篩檢時一起測', '先曬太陽並觀察到隔天', '增加哺乳次數，滿 24 小時再評估'], a: 0,
       ex: '24 小時內的黃疸若找得到原因，多半是溶血。AAP 也不建議用日曬治療。', src: 'KAS 4' },
-    { lv: '基礎', q: '哪一組上升速率提示溶血，應驗 DAT？（前者為出生 24 小時內，後者為之後，單位 mg/dL/h）',
+    { lv: '一般', q: '哪一組上升速率提示溶血，應驗 DAT？（前者為出生 24 小時內，後者為之後，單位 mg/dL/h）',
       o: ['≥ 0.1；≥ 0.1', '≥ 0.3；≥ 0.2', '≥ 0.5；≥ 0.3', '≥ 0.2；≥ 0.3'], a: 1,
       ex: '這樣的速率並不常見，若尚未驗 DAT 就要驗。', src: 'KAS 7' },
-    { lv: '基礎', q: '強效照光 (intensive phototherapy) 的規格是？',
+    { lv: '一般', q: '強效照光 (intensive phototherapy) 的規格是？',
       o: ['窄頻 LED 藍光，約 475 nm，輻照度 ≥ 30 µW/cm²/nm', '寬頻白光，輻照度 ≥ 10 µW/cm²/nm 即可，不需限制波長與照射面積', '窄頻 LED 綠光，約 530 nm，輻照度 ≥ 30 µW/cm²/nm', '每日日曬 30 分鐘，再配合一般日光燈與勤餵奶'], a: 0,
       ex: '460–490 nm 以外的光只增加熱與可能有害的波長。照射面積也要盡量大。', src: 'III.A 節' },
-    { lv: '基礎', q: '住院嬰兒開始照光後，第一次追蹤 TSB 應在？',
+    { lv: '一般', q: '住院嬰兒開始照光後，第一次追蹤 TSB 應在？',
       o: ['24 小時內，依日齡與趨勢再調整', '停止照光時才抽', '12 小時內', '改用照光部位 TcB 每日追蹤'], a: 2,
       ex: '12 小時是上限，依日齡、風險因子、TSB 與趨勢可更早。照光部位的 TcB 會低估 TSB，不可用來追蹤。', src: 'KAS 12' },
-    { lv: '基礎', q: '40 週無風險因子，出生 48 小時 TSB 18.0 開始照光（當時門檻 17.0），何時可以考慮停照光？',
+    { lv: '一般', q: '40 週無風險因子，出生 48 小時 TSB 18.0 開始照光（當時門檻 17.0），何時可以考慮停照光？',
       o: ['TSB 低於 18.0', 'TSB 低於 17.0', 'TSB 低於 16.0', 'TSB 低於 15.0'], a: 3,
       ex: '以「開始照光時該時數的門檻」再減 2 mg/dL，不是以當天的門檻或起始 TSB 計算。', src: 'KAS 15' },
-    { lv: '基礎', q: '純母乳寶寶 3 週半仍有黃疸，生長良好，下一步？',
+    { lv: '一般', q: '純母乳寶寶 3 週半仍有黃疸，生長良好，下一步？',
       o: ['停哺母乳 48 小時，觀察黃疸是否明顯下降再決定', '測總及直接膽紅素，並查新生兒篩檢結果', '直接安排光療', '安撫家長，滿 3 個月再抽血'], a: 1,
       ex: '目的是找出病理性膽汁滯留。配方奶寶寶則是滿 2 週仍黃就要測。', src: 'KAS 9' },
-    { lv: '基礎', q: '39 週無風險因子，出生 60 小時換血門檻為 25.1。照護升級從多少開始？之後 TSB 多久追一次？',
+    { lv: '一般', q: '39 週無風險因子，出生 60 小時換血門檻為 25.1。照護升級從多少開始？之後 TSB 多久追一次？',
       o: ['23.1；至少每 2 小時', '25.1；至少每 2 小時', '23.1；每 6 小時', '25.1；每 12 小時'], a: 0,
       ex: '升級門檻 = 換血門檻 − 2。照光中 TSB 仍上升者，換血曲線要改用 Fig 6（有風險因子）。', src: 'KAS 17、20' },
 
@@ -1045,24 +1051,31 @@ const TEACH = (() => {
 
   // ===== 考題 =====
   let quizDone = {};
+  let quizLv = '一般';
+  const quizItems = lv => TEACH.QUIZ.map((q, i) => ({ q, i })).filter(x => x.q.lv === lv);
   function renderQuizScore() {
-    const n = Object.keys(quizDone).length;
-    const right = Object.values(quizDone).filter(Boolean).length;
-    $('quizScore').textContent = `已答 ${n} / ${TEACH.QUIZ.length} 題，答對 ${right} 題`;
+    const items = quizItems(quizLv);
+    const answered = items.filter(x => x.i in quizDone);
+    $('quizScore').textContent = `${quizLv}考題：已答 ${answered.length} / ${items.length} 題，答對 ${answered.filter(x => quizDone[x.i]).length} 題`;
   }
-  function renderQuiz() {
-    quizDone = {};
-    let lv = '';
-    $('quizList').innerHTML = TEACH.QUIZ.map((q, i) => {
-      const head = q.lv !== lv ? `<h5 class="mt-3">${q.lv}題</h5>` : '';
-      lv = q.lv;
-      return `${head}<div class="card" data-q="${i}"><div class="card-body">
-        <p class="fw-bold mb-2">${i + 1}. ${q.q}</p>
+  function renderQuizLevel(lv) {
+    quizItems(lv).forEach(x => { delete quizDone[x.i]; });
+    document.querySelector(`#quizList [data-level="${lv}"]`).innerHTML = quizItems(lv).map(({ q, i }, n) => `<div class="card" data-q="${i}"><div class="card-body">
+        <p class="fw-bold mb-2">${n + 1}. ${q.q}</p>
         ${q.o.map((o, j) => `<button type="button" class="quiz-opt" data-opt="${j}">${'ABCD'[j]}. ${o}</button>`).join('')}
         <div class="quiz-ex" hidden><strong>正解 ${'ABCD'[q.a]}。</strong>${q.ex}<div class="src-note mt-1">出處：${q.src}</div></div>
-      </div></div>`;
-    }).join('');
+      </div></div>`).join('');
+  }
+  function showQuizLevel(lv) {
+    quizLv = lv;
+    document.querySelectorAll('#quizList [data-level]').forEach(d => { d.hidden = d.dataset.level !== lv; });
+    document.querySelectorAll('#quizLevels .nav-link').forEach(b => b.classList.toggle('active', b.dataset.lv === lv));
     renderQuizScore();
+  }
+  function renderQuiz() {
+    $('quizList').innerHTML = ['一般', '高階'].map(lv => `<div data-level="${lv}"></div>`).join('');
+    ['一般', '高階'].forEach(renderQuizLevel);
+    showQuizLevel(quizLv);
   }
   $('quizList').addEventListener('click', e => {
     const b = e.target.closest('.quiz-opt');
@@ -1078,7 +1091,11 @@ const TEACH = (() => {
     quizDone[i] = pick === q.a;
     renderQuizScore();
   });
-  $('quizReset').addEventListener('click', () => { renderQuiz(); window.scrollTo(0, 0); });
+  $('quizLevels').addEventListener('click', e => {
+    const b = e.target.closest('[data-lv]');
+    if (b) { showQuizLevel(b.dataset.lv); window.scrollTo(0, 0); }
+  });
+  $('quizReset').addEventListener('click', () => { renderQuizLevel(quizLv); renderQuizScore(); window.scrollTo(0, 0); });
 
   // ===== 心智圖 =====
   function renderMap() {
